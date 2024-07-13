@@ -1,88 +1,48 @@
-# Import necessary modules
-
-# subprocess: Allows running system commands from within Python
-import subprocess
-
-# os: Provides functions for interacting with the operating system (e.g., environment variables, file operations)
-import os
-
-# signal: Allows handling of system signals (not used in this script, but imported for potential future use)
-import signal
-
-# asyncio: Supports asynchronous programming, enabling concurrent execution of code
-import asyncio
-
-# load_dotenv: A function from the dotenv library to load environment variables from a .env file
-from dotenv import load_dotenv
-
-# shutil: Offers high-level file operations (e.g., copying, moving files)
-import shutil
-
-# requests: A library for making HTTP requests to web services or APIs
-import requests
-
-# time: Provides various time-related functions (e.g., delays, timing operations)
-import time
-
-# threading: Enables creation and management of threads for concurrent execution
+import subprocess  # For running system commands
+import os  # For environment variables and file operations
+import signal  # For handling signals (not used in this script, but imported for potential use)
+import asyncio  # For asynchronous programming
+from dotenv import load_dotenv  # For loading environment variables
+import shutil  # For file operations
+import requests  # For making HTTP requests
+import time  # For time-related functions
 import threading
-
-# clipboard: Allows interaction with the system clipboard (copy/paste operations)
 import clipboard
-
-# json: Provides functions for working with JSON data (encoding/decoding)
 import json
-
-# base64: Offers functions for encoding and decoding data using base64
 import base64
-
-# io: Provides tools for working with various types of I/O (input/output)
 import io
-
-# PIL (Python Imaging Library): A library for opening, manipulating, and saving images
+import threading
 from PIL import Image
 from PIL import ImageGrab
+import shutil  # Import shutil for checking executables
 
-# pynput: A library for controlling and monitoring input devices (keyboard in this case)
+import json
 from pynput import keyboard
 
-# Event: A threading primitive that allows communication between threads
 from threading import Event
 
-# re: Provides support for regular expressions in Python
+
 import re
-
-# random: Offers functions for generating random numbers, making selections, etc.
 import random
-
-# sounddevice: A library for playing and recording audio
+import requests
+import time
+from pyautogui import screenshot
 import sounddevice as sd
-
-# soundfile: A library for reading and writing sound files
 import soundfile as sf
-
-# importlib.util: Provides utilities for working with import statements
 import importlib.util
-
-# ModuleType: A type hint for module objects
 from types import ModuleType
 
-# Import the sys module for accessing Python interpreter variables
-import sys
-
-# Import configurations from a local module
 from api_configs.configs import *
 
-# Import custom functions from local modules
 from stream_tts import stream_audio_from_text
 from stream_asr import get_transcript
 from wake_words import get_wake_words, WakeWordEngine
 
-# Import LangChain components for natural language processing tasks
+# Import LangChain components
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
-from langchain_together import Together
+from langchain_together import Together  #pip install langchain-together
 from llm_definition import get_llm
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import (
@@ -93,122 +53,102 @@ from langchain.prompts import (
 )
 from langchain.chains import LLMChain
 
-# Get configuration for the language model
+
+
+
+
 llm_config = get_llm_config()
 
-# Get configuration for text-to-speech (TTS)
 tts_config = get_tts_config()
 
-# Set the default TTS API to use
 tts_api = tts_config["default_api"]
 
-# Set the TTS model to use
-tts_model = tts_config["apis"][tts_api]["model"]
+tts_model= tts_config["apis"][tts_api]["model"]
 
-# Set the API key for the TTS service
-tts_api_key = tts_config["apis"][tts_api]["api_key"]
+tts_api_key= tts_config["apis"][tts_api]["api_key"]
 
-# Define a function to import all functions from a specified directory
+
 def import_all_functions_from_directory(directory: str) -> dict:
-    # Initialize an empty dictionary to store activated skills
     activated_skills = {}
 
-    # Iterate through all files in the specified directory
     for filename in os.listdir(directory):
-        # Check if the file is a Python script
         if filename.endswith('.py'):
-            # Remove the .py extension to get the module name
-            module_name = filename[:-3]
-            # Construct the full file path
+            module_name = filename[:-3]  # Strip off the .py extension
             filepath = os.path.join(directory, filename)
 
-            # Create a module specification from the file
             spec = importlib.util.spec_from_file_location(module_name, filepath)
-            # Create a module based on the specification
             module = importlib.util.module_from_spec(spec)
-            # Execute the module
             spec.loader.exec_module(module)
 
-            # Iterate over all attributes in the module
+            # Iterate over all attributes of the module
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
-                # Check if the attribute is a function and not a built-in (doesn't start with __)
+                # Check if the attribute is a function
                 if callable(attr) and not attr_name.startswith('__'):
-                    # Add the function to the activated_skills dictionary
                     activated_skills[attr_name] = attr
-                    # Make the function globally accessible
-                    globals()[attr_name] = attr
+                    globals()[attr_name] = attr  # Make the function globally accessible
                     
-                    # Print information about the imported function
                     print(f"Imported function: {attr_name} from module {module_name}")
 
-    # Return the dictionary of activated skills
-    return activated_skills
-
-# Define a function to extract activated skills from a directory based on a keyword
-def extract_activated_skills_from_directory(directory: str, keyword: str = "KEYWORD ACTIVATED SKILL:") -> dict:
-    # Initialize an empty dictionary to store activated skills
-    activated_skills = {}
-
-    # Iterate through all files in the specified directory
-    for filename in os.listdir(directory):
-        # Check if the file is a Python script
-        if filename.endswith('.py'):
-            # Construct the full file path
-            filepath = os.path.join(directory, filename)
-
-            # Read the contents of the file
-            with open(filepath, 'r') as file:
-                lines = file.readlines()
-
-            # Search for functions with the specified keyword comment
-            for i in range(len(lines) - 1):
-                # Check if the current line contains the keyword (case-insensitive)
-                if keyword.lower() in lines[i].lower():
-                    # Check if the next line is a function definition
-                    if re.match(r'^\s*def\s+\w+\s*\(', lines[i + 1]):
-                        # Extract the function name using regex
-                        function_name = re.findall(r'def\s+(\w+)\s*\(', lines[i + 1])[0]
-                        # Extract the comment text after the keyword
-                        comment = lines[i].strip().split(keyword)[-1].strip()
-
-                        # Store the function name and comment in the dictionary
-                        activated_skills[function_name] = comment
-
-    # Return the dictionary of activated skills
     return activated_skills
     
 
 
+  
+def extract_activated_skills_from_directory(directory: str, keyword: str = "KEYWORD ACTIVATED SKILL:") -> dict:
+    # Dictionary zum Speichern der Funktionsnamen und zugehörigen Kommentare
+    activated_skills = {}
 
-# Define a function to execute functions in a specific order based on their names
+    # Gehe durch alle Dateien im angegebenen Verzeichnis
+    for filename in os.listdir(directory):
+        # Prüfe, ob es sich um eine Python-Datei handelt
+        if filename.endswith('.py'):
+            filepath = os.path.join(directory, filename)
+
+            # Lese den Inhalt der Datei
+            with open(filepath, 'r') as file:
+                lines = file.readlines()
+
+            # Durchsuche die Datei nach Funktionen mit dem entsprechenden Kommentar
+            for i in range(len(lines) - 1):
+                # Suche nach dem Kommentar in der aktuellen Zeile
+                if keyword.lower() in lines[i].lower():  # Falls der Kommentar in Kleinbuchstaben geschrieben ist
+                    # Prüfe, ob die nächste Zeile eine Funktionsdefinition ist
+                    if re.match(r'^\s*def\s+\w+\s*\(', lines[i + 1]):
+                        # Extrahiere den Funktionsnamen
+                        function_name = re.findall(r'def\s+(\w+)\s*\(', lines[i + 1])[0]
+                        # Extrahiere den Kommentartext nach dem Keyword
+                        comment = lines[i].strip().split(keyword)[-1].strip()
+
+                        # Speichere den Funktionsnamen und den Kommentar im Dictionary
+                        activated_skills[function_name] = comment
+
+    return activated_skills
+
+
+
+
 def execute_functions_in_order(activated_skills: dict):
-    # Sort the function names both numerically and alphabetically
-    # This uses a complex sorting key that splits the name into numeric and non-numeric parts
+    # Sortieren der Funktionsnamen nach numerischer und alphabetischer Reihenfolge
     sorted_function_names = sorted(activated_skills.keys(), key=lambda x: [int(y) if y.isdigit() else y for y in re.split('([0-9]+)', x)])
 
-    # Iterate through the sorted function names
     for function_name in sorted_function_names:
         print(f"Executing {function_name}...")
-        # Execute each function stored in the activated_skills dictionary
         activated_skills[function_name]()
 
-# Define the directory where skill functions are stored
+# Beispielaufruf der Funktionen
 skills_directory = 'skills'
-
-# Import all functions from the skills directory
 skills_dict = import_all_functions_from_directory(skills_directory)
 
-# Extract skills that are activated by a specific keyword
+#print(get_caption_from_screenshot_gpt4o_hyprlab())
+
 keyword_activated_skills_dict = extract_activated_skills_from_directory(skills_directory, "KEYWORD ACTIVATED SKILL:")    
 print(keyword_activated_skills_dict)
 
-# Extract skills that are activated by a language model
 lm_activated_skills_dict = extract_activated_skills_from_directory(skills_directory, "LM ACTIVATED SKILL:")    
 print(lm_activated_skills_dict)
 
-
-# Define a function for conditional execution of skills
+import sys
 def conditional_execution(function_name, transcription_response, conversation, scratch_pad, conditions_list=[], LMGeneratedParameters=""):
     """
     Executes a function based on a list of conditions, passing additional parameters
@@ -228,36 +168,40 @@ def conditional_execution(function_name, transcription_response, conversation, s
     # Try to get the function from the global namespace
     function_to_run = globals().get(function_name)
     
-    # If not found in globals, try to get it from the current module
     if function_to_run is None:
+        # If not found in globals, try to get it from the current module
         current_module = sys.modules[__name__]
         function_to_run = getattr(current_module, function_name, None)
     
-    # Raise an error if the function is not found
     if function_to_run is None:
         raise ValueError(f"The specified function '{function_name}' is not defined.")
     
-    # Raise an error if the function is not callable
     if not callable(function_to_run):
         raise ValueError(f"The function '{function_name}' is not callable.")
     
-    # Check conditions and execute the function if conditions are met
-    if len(conditions_list) > 0:
-        for condition in conditions_list:
-            # Check if all substrings in the condition are present in the transcription_response
-            if all(substring.lower() in transcription_response.lower() for substring in condition):
-                # Execute the function if the condition is met
-                skill_response, updated_conversation, updated_scratch_pad = function_to_run(transcription_response, conversation, scratch_pad, LMGeneratedParameters)
-                return skill_response, updated_conversation, updated_scratch_pad
+    if len(conditions_list)>0:
+      # Check each group of conditions in the conditions_list.
+      for condition in conditions_list:
+        # Check if all conditions in the inner list are present in the transcription_response as substrings.
+        if all(substring.lower() in transcription_response.lower() for substring in condition):
+            # Executes the function if the condition is met.
+            skill_response, updated_conversation, updated_scratch_pad = function_to_run(transcription_response, conversation, scratch_pad,  LMGeneratedParameters)
+            return skill_response, updated_conversation, updated_scratch_pad
     else:
-        # If no conditions are specified, execute the function anyway
-        skill_response, updated_conversation, updated_scratch_pad = function_to_run(transcription_response, conversation, scratch_pad, LMGeneratedParameters)
-        return skill_response, updated_conversation, updated_scratch_pad    
     
-    # If no conditions are met, return unchanged objects and None for skill_response
+            skill_response, updated_conversation, updated_scratch_pad = function_to_run(transcription_response, conversation, scratch_pad,  LMGeneratedParameters)
+            return skill_response, updated_conversation, updated_scratch_pad    
+    
+    
+    
+    
+    # If no conditions are met, return the unchanged objects and None for skill_response
     return "", conversation, scratch_pad            
+            
+#print(get_caption_from_clipboard_gpt4o_hyprlab()) 
 
-# Define a function to parse a string representation of a list of lists
+
+
 def parse_list_of_lists(input_str):
     """
     Parses a string representing a list of lists, where each sublist contains strings.
@@ -285,27 +229,40 @@ def parse_list_of_lists(input_str):
     return result
 
 
+# print(get_caption_from_screenshot_florence2())
+
+
+
+# Load environment variables from .env file
+#load_dotenv()
+
+
+
 # Define LanguageModelProcessor class
 class LanguageModelProcessor:
     def __init__(self):
-        # Initialize the language model (LLM) using a configuration
-        self.llm = get_llm(llm_config)
+        # Initialize the language model (LLM)
 
-        # Initialize conversation memory to store chat history
+        self.llm= get_llm(llm_config)
+        
+
+
+
+        # Initialize conversation memory
         self.memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-        # Load system prompt from a file
+        # Load system prompt from file
         with open('system_prompt.txt', 'r') as file:
             system_prompt = file.read().strip()
         
-        # Create a chat prompt template with system message, chat history, and user input
+        # Create chat prompt template
         self.prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(system_prompt),
             MessagesPlaceholder(variable_name="chat_history"),
             HumanMessagePromptTemplate.from_template("{text}")
         ])
 
-        # Create a conversation chain combining the LLM, prompt, and memory
+        # Create conversation chain
         self.conversation = LLMChain(
             llm=self.llm,
             prompt=self.prompt,
@@ -316,7 +273,7 @@ class LanguageModelProcessor:
         # Add user message to memory
         self.memory.chat_memory.add_user_message(text)
 
-        # Record start time for performance measurement
+        # Record start time
         start_time = time.time()
 
         # Get response from LLM
@@ -328,38 +285,42 @@ class LanguageModelProcessor:
         # Add AI response to memory
         self.memory.chat_memory.add_ai_message(response['text'])
 
-        # Calculate and print elapsed time
+        # Calculate elapsed time
         elapsed_time = int((end_time - start_time) * 1000)
         print(f"LLM ({elapsed_time}ms): {response['text']}")
         return response['text']
 
     def get_system_prompt(self):
-        # Find and return the SystemMessagePromptTemplate from the prompt messages
+        # Find the SystemMessagePromptTemplate in the messages
         for message in self.prompt.messages:
             if isinstance(message, SystemMessagePromptTemplate):
+                # Return the template string
                 return message.prompt.template
+        
+        # Return None if no SystemMessagePromptTemplate is found
         return None
         
     def update_system_prompt(self, new_prompt):
-        # Update the system prompt with a new one
+        # Update the system prompt text
         self.system_prompt = new_prompt
 
-        # Recreate the prompt template with the new system prompt
+        # Update the prompt template in the conversation chain
         self.prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(self.system_prompt),
             MessagesPlaceholder(variable_name="chat_history"),
             HumanMessagePromptTemplate.from_template("{text}")
         ])
 
-        # Recreate the conversation chain with the updated prompt
+        # Create conversation chain
         self.conversation = LLMChain(
             llm=self.llm,
             prompt=self.prompt,
             memory=self.memory
         )
 
-# Define TextToSpeech class
+
 class TextToSpeech:
+
     def __init__(self):
         self.player_process = None
         self.should_stop = False
@@ -371,27 +332,24 @@ class TextToSpeech:
         return shutil.which(lib_name) is not None
 
     def stop(self):
-        # Stop the TTS playback and keyboard listener
         self.should_stop = True
         if self.player_process:
             self.player_process.terminate()
             self.player_process = None
         if self.listener:
-            self.listener.stop()
+            self.listener.stop()  # Stop the keyboard listener
 
     def on_activate(self):
-        # Callback for hotkey activation
         print("Hotkey activated - stopping TTS.")
         self.stop()
 
     def speak(self, text, stop_event: Event):
-        # Check if ffplay is installed (required for audio streaming)
         if not self.is_installed("ffplay"):
             raise ValueError("ffplay not found, necessary to stream audio.")
 
-        # Setup hotkey listener for Ctrl+Shift to stop TTS
-        with keyboard.GlobalHotKeys({'<ctrl>+<shift>': self.on_activate}) as self.listener:
-            # Prepare ffplay command for audio playback
+        # Setup hotkey listener
+        with keyboard.GlobalHotKeys({
+                '<ctrl>+<shift>': self.on_activate}) as self.listener:
             player_command = ["ffplay", "-autoexit", "-", "-nodisp"]
             self.player_process = subprocess.Popen(
                 player_command,
@@ -401,43 +359,40 @@ class TextToSpeech:
             )
 
             try:
-                # Generate audio stream from text
                 audio_stream_generator = stream_audio_from_text(text, tts_api_key, tts_model)
                 for chunk in audio_stream_generator:
-                    # Check for stop conditions
                     if stop_event.is_set() or self.should_stop:
                         break
                     if chunk:
                         try:
-                            # Write audio chunk to ffplay process
                             self.player_process.stdin.write(chunk)
                             self.player_process.stdin.flush()
                         except BrokenPipeError:
                             print("TTS playback stopped.")
                             break
             finally:
-                # Clean up resources
                 if self.player_process and self.player_process.stdin:
                     self.player_process.stdin.close()
                 if self.player_process:
                     self.player_process.wait()
                 self.player_process = None
-                
-                
 
+
+  
 def save_scratch_pad_to_file(scratch_pad, filename="ScratchPad.json"):
-    """
-    Saves the dictionary 'scratch_pad' to a file specified by 'filename'.
-    """
-    with open(filename, "w") as file:
-        json.dump(scratch_pad, file, indent=4)
+        """
+        Saves the dictionary 'scratch_pad' to a file specified by 'filename'.
+        """
+        with open(filename, "w") as file:
+            json.dump(scratch_pad, file, indent=4)
 
 def load_scratch_pad_from_file(filename="ScratchPad.json"):
-    """
-    Loads a dictionary from a file specified by 'filename'.
-    """
-    with open(filename, "r") as file:
-        return json.load(file)
+        """
+        Loads a dictionary from a file specified by 'filename'.
+        """
+        with open(filename, "r") as file:
+            return json.load(file)
+
 
 def extract_opening_and_closing_tags(input_string):
     """
@@ -462,6 +417,9 @@ def extract_opening_and_closing_tags(input_string):
 
     return opening_tag, closing_tag
 
+
+
+
 class ConversationManager:
     def __init__(self):
         self.transcription_response = ""
@@ -469,13 +427,14 @@ class ConversationManager:
         self.tts = TextToSpeech()
         self.stop_event = asyncio.Event()
         self.conversation_active = False
-        self.ScratchPad = {}  # Scratch pad for skill functions to store persistent variables
+        self.ScratchPad = {}  # scratch pad for skill functions to store persistent variables that can be accessed in consecutive skill calls 
 
-        # Try to load existing scratch pad, if it fails, use an empty dictionary
+        #save_scratch_pad_to_file(self.ScratchPad )
         try:
-            self.ScratchPad = load_scratch_pad_from_file()
+          self.ScratchPad = load_scratch_pad_from_file()
         except:
-            pass
+           pass
+
 
     async def start_conversation(self):
         self.conversation_active = True
@@ -503,75 +462,142 @@ class ConversationManager:
                 self.conversation_active = False
                 break
 
-            all_skill_responses = ""
-            # Process keyword-activated skills
-            for keyword_activated_function in keyword_activated_skills_dict:
-                skill_response = ""
-                print(keyword_activated_function)
-                condition_list = parse_list_of_lists(keyword_activated_skills_dict[keyword_activated_function])
-                try:
-                    skill_response, updated_conversation, updated_scratch_pad = conditional_execution(
-                        keyword_activated_function, self.transcription_response, 
-                        self.llm.conversation, self.ScratchPad, condition_list
-                    )
-                    self.llm.conversation = updated_conversation
-                    self.ScratchPad = updated_scratch_pad
-                    all_skill_responses += "\n" + skill_response
-                except:
-                    pass
-     
-            print(self.transcription_response + all_skill_responses)
-            
-            # Update system prompt with LM activated skills
-            system_prompt = self.llm.get_system_prompt()
-            for lm_activated_skill in lm_activated_skills_dict:
-                system_prompt += "\n" + lm_activated_skills_dict[lm_activated_skill]
-            self.llm.update_system_prompt(system_prompt)
 
+            # system prompt needs to be updated with llm activated skill descriptions
+            # with 1. SKILL TITLE , 2. DESCRIPTION , 3. HOW TO TRIGGER IT WITH A FEW EXAMPLES
+            # LLM activated skills need to have keywords or other parameters within a tag following the format 
+            # <SUPER COOL SKILL> Keywords or other Parameters </SUPER COOL SKILL> 
+            # Next the parameters get parsed out and passed to the according function
+            '''
+            
+            Inputs of every skill function are the 
+
+            1) self.transcription_response, 
+            2) conversation chain self.llm.conversation, 
+            3) the ScratchPad dict & 
+            4) a) in case of LM Activated skills: LMGeneratedParameters like keywords or search strings ( the stuff between tags like <SUPER COOL SKILL> Keywords or other Parameters </SUPER COOL SKILL>  ) or 
+            4) b) in case of Keyword activated skill: keyword condition_list 
+
+            self.transcription_response, self.llm.conversation, ScratchPad , condition_list
+
+            Reminder:
+            
+            the Conversation Chain includes the Chat Memory self.memory
+            self.llm.conversation = LLMChain(
+            llm=self.llm,
+            prompt=self.prompt,
+            memory=self.memory
+            )
+            
+            And the Chat Memory self.memory includes 1) what the User has said so far and 2) what the AI had said so far.
+            
+            
+            Outputs of every skill are the 
+            1) updated Conversation Chain self.llm.conversation, 
+            2) the updated ScratchPad dict & skill_response, that 
+              a) in the case of a Keyword Activated Skill will be a string that gets fed into the LM instead of the self.transcription_response  and that 
+              b) in the case of a LM Activated Skill will be the text that gets passed to the TTS.
+            '''
+
+             
+  
+            all_skill_responses=""
+            for keyword_activated_function in keyword_activated_skills_dict:
+               skill_response=""
+               print(keyword_activated_function)
+               keyword_activated_skills_dict [keyword_activated_function]
+               condition_list = parse_list_of_lists(keyword_activated_skills_dict [keyword_activated_function])
+               try:
+                 skill_response, updated_conversation, updated_scratch_pad = conditional_execution(keyword_activated_function, self.transcription_response, self.llm.conversation, self.ScratchPad , condition_list )
+                 
+                 self.llm.conversation= updated_conversation
+                 self.ScratchPad= updated_scratch_pad
+                 
+                 all_skill_responses += "\n" + skill_response
+                 
+                 
+                 
+               except:
+                  pass
+     
+            print(self.transcription_response+ all_skill_responses)
+            system_prompt = self.llm.get_system_prompt()
+            #print(system_prompt)
+            
+            #self.llm.update_system_prompt("You are a baby lion.")
+            #system_prompt = self.llm.get_system_prompt()
+            #print(system_prompt)
+            
+            #loading LM Activated Skills into system prompt
+            for lm_activated_skill in lm_activated_skills_dict:
+               system_prompt += "\n" + lm_activated_skills_dict[lm_activated_skill]
+            #print(system_prompt)   
+            self.llm.update_system_prompt(system_prompt)
+                                    
+
+            
             # Process the transcription and generate a response
-            llm_response = self.llm.process(self.transcription_response + all_skill_responses)
+            llm_response = self.llm.process(self.transcription_response+ all_skill_responses)   # the input and the output get added to conversation chain within this function call to the self.llm.memory.chat_memory
+            
             print("llm_response", str(llm_response))
 
-            # Process LM-activated skills
-            perform_lm_skill = False
-            for lm_activated_function in lm_activated_skills_dict:
-                skill_response = ""
-                print(lm_activated_function)
-                opening_tag, closing_tag = extract_opening_and_closing_tags(lm_activated_skills_dict[lm_activated_function])
-                print(opening_tag, closing_tag)
-                
-                if (opening_tag and closing_tag and 
-                    opening_tag.lower() in llm_response.lower() and 
-                    closing_tag.lower() in llm_response.lower()):  
-                    perform_lm_skill = True
-                    opening_tag_name = re.escape(opening_tag[1:-1])
-                    closing_tag_name = re.escape(closing_tag[2:-1])
 
-                    pattern = rf"<{opening_tag_name}>(.*?)</{closing_tag_name}>"
-                    LMGeneratedParameters = re.findall(pattern, llm_response)
-                    LMGeneratedParameters = LMGeneratedParameters[0]
-                    print("LMGeneratedParameters", LMGeneratedParameters)
+
+
+
+
+
+
+            for lm_activated_function in lm_activated_skills_dict:
+               skill_response=""
+               print(lm_activated_function)
+               opening_tag, closing_tag =  extract_opening_and_closing_tags( lm_activated_skills_dict [lm_activated_function] )
+               print(opening_tag, closing_tag )
+               perform_lm_skill=False
+               if (opening_tag and closing_tag and 
+                   opening_tag.lower() in llm_response.lower() and 
+                   closing_tag.lower() in llm_response.lower()):  
+                 perform_lm_skill=True
+                 opening_tag_name = re.escape(opening_tag[1:-1])
+                 closing_tag_name = re.escape(closing_tag[2:-1])
+
+                 # Define a regular expression pattern dynamically based on opening_tag and closing_tag
+                 pattern = rf"<{opening_tag_name}>(.*?)</{closing_tag_name}>"
+
+                 # Use re.findall to extract all occurrences of the pattern
+                 LMGeneratedParameters  = re.findall(pattern, llm_response) 
+                 LMGeneratedParameters = LMGeneratedParameters[0]
+                 print("LMGeneratedParameters", LMGeneratedParameters)
                
-                    try:
-                        skill_response, updated_conversation, updated_scratch_pad = conditional_execution(
-                            lm_activated_function, self.transcription_response, 
-                            self.llm.conversation, self.ScratchPad, [], LMGeneratedParameters
-                        )
-                        self.llm.conversation = updated_conversation
-                        self.ScratchPad = updated_scratch_pad
-                        break  # Allow only 1 LM activated function to get executed
-                    except:
-                        pass
+                 try:
+                   skill_response, updated_conversation, updated_scratch_pad = conditional_execution(lm_activated_function, self.transcription_response, self.llm.conversation, self.ScratchPad , [], LMGeneratedParameters )
+                   #print("skill_response",skill_response ) 
+                   self.llm.conversation= updated_conversation
+                   self.ScratchPad= updated_scratch_pad
+                 
+
+                   self.llm.conversation= updated_conversation
+                   self.ScratchPad= updated_scratch_pad
+                 
+                 
+                   break # allow only 1 LM activated function to get executed, otherwise it got get confusing
+                 
+                 
+                 
+                 except:
+                    pass
+     
 
             if perform_lm_skill:
-                print(f"AI: {skill_response}")
-                await self.speak_response(skill_response)
+               print(f"AI: {skill_response}")
+               await self.speak_response(skill_response)
             else:
-                print(f"AI: {llm_response}")
-                await self.speak_response(llm_response)           		             
+               print(f"AI: {llm_response}")
+               await self.speak_response(llm_response)           		             
             self.transcription_response = ""
 
         print("Conversation ended. Listening for wake words again...")
+
 
 async def main():
     conversation_manager = ConversationManager()
@@ -582,4 +608,6 @@ async def main():
     await wake_word_engine.detect()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main()) 
+   
+   

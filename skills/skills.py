@@ -1,6 +1,6 @@
 import clipboard
 import json
-
+import random
 from PIL import Image
 from PIL import ImageGrab
 
@@ -23,6 +23,12 @@ from florence2 import send_image_for_captioning_florence2
 from florence2 import send_image_for_ocr_florence2
 
 from hyprlab import send_image_for_captioning_and_ocr_hyprlab_gpt4o
+
+
+from dl_yt_subtitles import download_youtube_video_info, extract_and_concat_subtitle_text, find_first_youtube_url, extract_title, extract_description
+
+
+
 
 # URL of the API
 url = 'https://api.hyprlab.io/v1/chat/completions'
@@ -84,8 +90,14 @@ def send_image_for_captioning_and_ocr_hyprlab_gpt4o (img_byte_arr):
 
 
 # KEYWORD ACTIVATED SKILL:[ ["have a look"], [ "buddy look"], ["look buddy"], ["buddy, look" ], ["look, buddy" ]  ]
-def get_caption_from_clipboard_gpt4o_hyprlab():
+def get_caption_from_clipboard_gpt4o_hyprlab(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
     # Check clipboard content
+
+    
+    skill_response = "What BUD-E is seeing: "
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
+
 
     try:
        content = ImageGrab.grabclipboard()
@@ -95,16 +107,21 @@ def get_caption_from_clipboard_gpt4o_hyprlab():
         if isinstance(content, str):
             if "https://www.youtu" in content and len(content)<100:
                 video_metadata= download_youtube_video_info(find_first_youtube_url(content))
+                print(video_metadata)
                 subtitle_text= extract_and_concat_subtitle_text(str(video_metadata))
                 print(subtitle_text)
                 print(len(subtitle_text))
-                return subtitle_text [:6000] 
+                skill_response+= subtitle_text [:6000] 
+                print(skill_response)
+                return skill_response , updated_conversation, updated_scratch_pad 
                 
             else:
               print("Returning text from the clipboard...")
-              return content
+              skill_response+= content
+              return skill_response , updated_conversation, updated_scratch_pad 
     print(content)
     print(type(content))
+    
     
     if isinstance(content, Image.Image):
         print("Processing an image from the clipboard...")
@@ -121,18 +138,26 @@ def get_caption_from_clipboard_gpt4o_hyprlab():
         combined_caption = send_image_for_captioning_and_ocr_hyprlab_gpt4o(img_byte_arr)
 
         print(combined_caption)
+        
+        skill_response += combined_caption
    
   
-        return combined_caption
+        return   skill_response, updated_conversation, updated_scratch_pad   
 
     else:
-        return "No image or text data found in the clipboard."
+        skill_response += "No image or text data found in the clipboard."
 
-# Functions `handle_captioning` and `handle_ocr` need to be defined elsewhere in your code.
-# They should update the `results` dictionary with keys 'caption' and 'ocr' respectively.
+        return skill_response, updated_conversation, updated_scratch_pad 
+
 
 # KEYWORD ACTIVATED SKILL:[ ["have a look", "screen"], [ "buddy look at the screen"], ["look buddy at the screen"], ["buddy, look at the screen" ], ["look, buddy" , "screenshot"]  ]
-def get_caption_from_screenshot_gpt4o_hyprlab():
+def get_caption_from_screenshot_gpt4o_hyprlab(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
+
+    
+    skill_response = "What BUD-E is seeing: "
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
+
 
 
     # Take a screenshot and open it with PIL
@@ -153,15 +178,24 @@ def get_caption_from_screenshot_gpt4o_hyprlab():
 
     # Send image for captioning and return the result
     combined_caption = send_image_for_captioning_and_ocr_hyprlab_gpt4o(img_byte_arr)
-
+   
     print(combined_caption)
+
+    skill_response += combined_caption
    
   
-    return combined_caption
+    return skill_response , updated_conversation, updated_scratch_pad 
 
 
-# KEYWORD ACTIVATED SKILL:[ ["have a look", "florence"], [ "buddy look", "florence"], ["look buddy at the screen", "florence"], ["buddy, look at the screen", "florence" ], ["look, buddy" , "screenshot", "florence"]  ]
-def get_caption_from_screenshot_florence2():
+# K #####DEACTIVATED###### EYWORD ACTIVATED SKILL:[ ["have a look", "florence"], [ "buddy look", "florence"], ["look buddy at the screen", "florence"], ["buddy, look at the screen", "florence" ], ["look, buddy" , "screenshot", "florence"]  ]
+def get_caption_from_screenshot_florence2(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
+
+
+    skill_response = "What BUD-E is seeing: "
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
+
+
     # Take a screenshot and open it with PIL
     print("Taking a screenshot...")
     screenshot_image = screenshot()  # Uses PyAutoGUI to take a screenshot
@@ -200,8 +234,10 @@ def get_caption_from_screenshot_florence2():
     print(results)
     # Combine results and print
     combined_caption = results['caption'] + "\nOCR RESULTS:\n"+ results['ocr']
+
+    skill_response += combined_caption
         
-    return combined_caption
+    return  skill_response, updated_conversation, updated_scratch_pad   
 
 
 
@@ -209,8 +245,14 @@ def get_caption_from_screenshot_florence2():
 
 
 
+def get_caption_from_clipboard_florence2(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
 
-def get_caption_from_clipboard_florence2():
+    skill_response = "What BUD-E is seeing: "
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
+
+
+
     # Check clipboard content
 
     try:
@@ -219,11 +261,27 @@ def get_caption_from_clipboard_florence2():
         content = clipboard.paste()
         print(type(content))
         if isinstance(content, str):
-            print("Returning text from the clipboard...")
-            return content
+            if "https://www.youtu" in content and len(content)<100:
+                video_metadata= download_youtube_video_info(find_first_youtube_url(content))
+                title = extract_title(str(video_metadata))
+                desc = extract_description(str(video_metadata))
+                subtitle_text= extract_and_concat_subtitle_text(str(video_metadata))
+                
+                #print(subtitle_text)
+                #print(len(subtitle_text))
+                skill_response+= f"Title: {title} \n Description: {desc} \n{subtitle_text[:8000] }"
+                
+                return skill_response , updated_conversation, updated_scratch_pad 
+                
+            else:
+              print("Returning text from the clipboard...")
+              skill_response+= content
+              return skill_response , updated_conversation, updated_scratch_pad 
     print(content)
     print(type(content))
-    
+
+
+
     if isinstance(content, Image.Image):
         print("Processing an image from the clipboard...")
         if content.mode != 'RGB':
@@ -250,10 +308,14 @@ def get_caption_from_clipboard_florence2():
 
         # Combine results and return
         combined_caption = results.get('caption', '') + "\nOCR RESULTS:\n" + results.get('ocr', '')
-        return combined_caption
+        skill_response += combined_caption
+
+        return  skill_response, updated_conversation, updated_scratch_pad   
 
     else:
-        return "No image or text data found in the clipboard."
+        skill_response += "No image or text data found in the clipboard."
+
+        return  skill_response, updated_conversation, updated_scratch_pad     
 
 
 
@@ -282,15 +344,20 @@ def extract_urls_to_open(input_string):
     return urls
 
 # LM ACTIVATED SKILL: SKILL TITLE: Review scientific literature. DESCRIPTION: Sends a question to the Ask Open Research Knowledge Graph Service that retrieves relevant abstracts from 76+ million scientific papers. USAGE INSTRUCTIONS: Whenever the user asks you to review the scientific literature for a certain question, you reply with the question inside the tags <open-askorkg> ... </open-askorkg>, like e.g. if the user asks you to review the scientific literature for the question 'Is it possible to cure aging?', you output only: <open-askorkg>Is it possible to cure aging?</open-askorkg> and nothing more.
-def extract_questions_to_send_to_askorkg(input_string):
-    # Define a regular expression pattern to find content within <open-askorkg>...</open-orkg> tags
-    pattern = r"<open-askorkg>(.*?)</open-askorkg>"
+def send_question_to_askorkg(transcription_response, conversation, scratch_pad, question_for_askorkg):
+
     
-    # Use re.findall to extract all occurrences of the pattern
-    contents = re.findall(pattern, input_string)
+    open_site(f"https://ask.orkg.org/search?query={question_for_askorkg}")
+    skill_response = random.choice([
+                    "Sure! I will use the Ask Open Knowledge Graph service to analyze the question: {0}",
+                    "Got it! Let's see what Ask Open Knowledge Graph has on: {0}",
+                    "I'm on it! Checking Ask Open Knowledge Graph for information about: {0}",
+                    "Excellent question! I'll consult Ask Open Knowledge Graph about: {0}",
+                    "One moment! I'll look that up on Ask Open Knowledge Graph for you about: {0}"
+                ]).format(question_for_askorkg)
+    print ("SUCCESS")
+    return  skill_response, conversation, scratch_pad
     
-    # Return the content of the first tag pair, or None if there are no matches
-    return contents[0] if contents else None
 
 # LM ACTIVATED SKILL: bla
 def extract_questions_to_send_to_wikipedia(input_string):

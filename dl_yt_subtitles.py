@@ -44,7 +44,32 @@ def extract_and_concat_subtitle_text(subtitle_text):
     # Joining all the matched texts with a space
     concatenated_text = ''.join(matches)
     return concatenated_text
+
+def extract_title(text):
+    # Regex pattern to find text between 'title': ' and ', 'description
+    pattern = re.compile(r"'title':\s*'([^']*)',\s*'description")
     
+    # Searching the text for the pattern
+    match = pattern.search(text)
+    
+    # If a match is found, return the captured group, otherwise return None
+    return match.group(1) if match else None
+    
+    
+    
+def extract_description(input_string):
+    # Regular expression to find text between ', 'description and ', 'url
+    pattern = re.compile(r", 'description': '(.*?)', 'url'")
+    match = pattern.search(input_string)
+    
+    # If a match is found, return the matched text; otherwise, return None
+    if match:
+        return match.group(1)
+    else:
+        return None
+        
+        
+                
     
 
 def find_first_youtube_url(text):

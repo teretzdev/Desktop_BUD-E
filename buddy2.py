@@ -1,56 +1,89 @@
+# Import necessary modules
+
+# subprocess: Allows running system commands from within Python
+import subprocess
+
+# os: Provides functions for interacting with the operating system (e.g., environment variables, file operations)
 import os
+
+# signal: Allows handling of system signals (not used in this script, but imported for potential future use)
+import signal
+
+# asyncio: Supports asynchronous programming, enabling concurrent execution of code
+import asyncio
+
+# load_dotenv: A function from the dotenv library to load environment variables from a .env file
+from dotenv import load_dotenv
+
+# shutil: Offers high-level file operations (e.g., copying, moving files)
+import shutil
+
+# requests: A library for making HTTP requests to web services or APIs
+import requests
+
+# time: Provides various time-related functions (e.g., delays, timing operations)
 import time
-from langchain_community.chat_models import ChatOpenAI
-from langchain_community.llms import Together, VLLM, Ollama
-from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
-from langchain.memory import ConversationBufferMemory
-from langchain_core.runnables import RunnableSequence
 
-
-
-
-# Import necessary libraries
-import pvporcupine  # For wake word detection
-import pvrecorder  # For audio recording
-import subprocess  # For running system commands
-import os  # For environment variables and file operations
-import signal  # For handling signals (not used in this script, but imported for potential use)
-import asyncio  # For asynchronous programming
-from dotenv import load_dotenv  # For loading environment variables
-import shutil  # For file operations
-import requests  # For making HTTP requests
-import time  # For time-related functions
+# threading: Enables creation and management of threads for concurrent execution
 import threading
+
+# clipboard: Allows interaction with the system clipboard (copy/paste operations)
 import clipboard
+
+# json: Provides functions for working with JSON data (encoding/decoding)
 import json
+
+# base64: Offers functions for encoding and decoding data using base64
 import base64
+
+# io: Provides tools for working with various types of I/O (input/output)
 import io
-import threading
+
+# PIL (Python Imaging Library): A library for opening, manipulating, and saving images
 from PIL import Image
 from PIL import ImageGrab
 
+# pynput: A library for controlling and monitoring input devices (keyboard in this case)
+from pynput import keyboard
+
+# Event: A threading primitive that allows communication between threads
+from threading import Event
+
+# re: Provides support for regular expressions in Python
 import re
-import subprocess
-import time
+
+# random: Offers functions for generating random numbers, making selections, etc.
 import random
-import requests
-import base64
-from PIL import Image
-import io
-import time
-from pyautogui import screenshot
-import requests
-import io
+
+# sounddevice: A library for playing and recording audio
 import sounddevice as sd
+
+# soundfile: A library for reading and writing sound files
 import soundfile as sf
-import time
 
-import threading
+# importlib.util: Provides utilities for working with import statements
+import importlib.util
 
-# Import LangChain components
+# ModuleType: A type hint for module objects
+from types import ModuleType
+
+# Import the sys module for accessing Python interpreter variables
+import sys
+
+# Import configurations from a local module
+from api_configs.configs import *
+
+# Import custom functions from local modules
+from stream_tts import stream_audio_from_text
+from stream_asr import get_transcript
+from wake_words import get_wake_words, WakeWordEngine
+
+# Import LangChain components for natural language processing tasks
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
+from langchain_together import Together
+from llm_definition import get_llm
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import (
     ChatPromptTemplate,
@@ -60,374 +93,273 @@ from langchain.prompts import (
 )
 from langchain.chains import LLMChain
 
-# Import Deepgram components
-from deepgram import (
-    DeepgramClient,
-    DeepgramClientOptions,
-    LiveTranscriptionEvents,
-    LiveOptions,
-    Microphone,
-)
+# Get configuration for the language model
+llm_config = get_llm_config()
 
-from florence2 import handle_captioning_florence2
-from florence2 import handle_ocr_florence2
-from florence2 import send_image_for_captioning_florence2
-from florence2 import send_image_for_ocr_florence2
+# Get configuration for text-to-speech (TTS)
+tts_config = get_tts_config()
 
-from hyprlab import send_image_for_captioning_and_ocr_hyprlab_gpt4o
-from dl_yt_subtitles import download_youtube_video_info, extract_and_concat_subtitle_text, find_first_youtube_url
+# Set the default TTS API to use
+tts_api = tts_config["default_api"]
 
+# Set the TTS model to use
+tts_model = tts_config["apis"][tts_api]["model"]
 
-florence2_server_url = "http://213.173.96.19:5002/" 
-HYPRLAB_API_KEY= "hypr-lab-dhItb5DFQctQvafMzqgKT3BlbkFJfot58G96B2VMaS4u0015" 
+# Set the API key for the TTS service
+tts_api_key = tts_config["apis"][tts_api]["api_key"]
 
-def get_caption_from_clipboard_gpt4o_hyprlab():
-    # Check clipboard content
+# Define a function to import all functions from a specified directory
+def import_all_functions_from_directory(directory: str) -> dict:
+    # Initialize an empty dictionary to store activated skills
+    activated_skills = {}
 
-    try:
-       content = ImageGrab.grabclipboard()
-    except:
-        content = clipboard.paste()
-        print(type(content))
-        if isinstance(content, str):
-            if "https://www.youtu" in content and len(content)<100:
-                video_metadata= download_youtube_video_info(find_first_youtube_url(content))
-                subtitle_text= extract_and_concat_subtitle_text(str(video_metadata))
-                print(subtitle_text)
-                print(len(subtitle_text))
-                return subtitle_text [:6000] 
-                
-            else:
-              print("Returning text from the clipboard...")
-              return content
-    print(content)
-    print(type(content))
+    # Iterate through all files in the specified directory
+    for filename in os.listdir(directory):
+        # Check if the file is a Python script
+        if filename.endswith('.py'):
+            # Remove the .py extension to get the module name
+            module_name = filename[:-3]
+            # Construct the full file path
+            filepath = os.path.join(directory, filename)
+
+            # Create a module specification from the file
+            spec = importlib.util.spec_from_file_location(module_name, filepath)
+            # Create a module based on the specification
+            module = importlib.util.module_from_spec(spec)
+            # Execute the module
+            spec.loader.exec_module(module)
+
+            # Iterate over all attributes in the module
+            for attr_name in dir(module):
+                attr = getattr(module, attr_name)
+                # Check if the attribute is a function and not a built-in (doesn't start with __)
+                if callable(attr) and not attr_name.startswith('__'):
+                    # Add the function to the activated_skills dictionary
+                    activated_skills[attr_name] = attr
+                    # Make the function globally accessible
+                    globals()[attr_name] = attr
+                    
+                    # Print information about the imported function
+                    print(f"Imported function: {attr_name} from module {module_name}")
+
+    # Return the dictionary of activated skills
+    return activated_skills
+
+# Define a function to extract activated skills from a directory based on a keyword
+def extract_activated_skills_from_directory(directory: str, keyword: str = "KEYWORD ACTIVATED SKILL:") -> dict:
+    # Initialize an empty dictionary to store activated skills
+    activated_skills = {}
+
+    # Iterate through all files in the specified directory
+    for filename in os.listdir(directory):
+        # Check if the file is a Python script
+        if filename.endswith('.py'):
+            # Construct the full file path
+            filepath = os.path.join(directory, filename)
+
+            # Read the contents of the file
+            with open(filepath, 'r') as file:
+                lines = file.readlines()
+
+            # Search for functions with the specified keyword comment
+            for i in range(len(lines) - 1):
+                # Check if the current line contains the keyword (case-insensitive)
+                if keyword.lower() in lines[i].lower():
+                    # Check if the next line is a function definition
+                    if re.match(r'^\s*def\s+\w+\s*\(', lines[i + 1]):
+                        # Extract the function name using regex
+                        function_name = re.findall(r'def\s+(\w+)\s*\(', lines[i + 1])[0]
+                        # Extract the comment text after the keyword
+                        comment = lines[i].strip().split(keyword)[-1].strip()
+
+                        # Store the function name and comment in the dictionary
+                        activated_skills[function_name] = comment
+
+    # Return the dictionary of activated skills
+    return activated_skills
     
-    if isinstance(content, Image.Image):
-        print("Processing an image from the clipboard...")
-        if content.mode != 'RGB':
-            content = content.convert('RGB')
-            
-        # Save image to a byte array
-        img_byte_arr = io.BytesIO()
-        content.save(img_byte_arr, format='JPEG', quality=60)
-        img_byte_arr = img_byte_arr.getvalue()
 
 
-        # Send image for captioning and return the result
-        combined_caption = send_image_for_captioning_and_ocr_hyprlab_gpt4o(img_byte_arr, HYPRLAB_API_KEY)
 
-        print(combined_caption)
-   
-  
-        return combined_caption
+# Define a function to execute functions in a specific order based on their names
+def execute_functions_in_order(activated_skills: dict):
+    # Sort the function names both numerically and alphabetically
+    # This uses a complex sorting key that splits the name into numeric and non-numeric parts
+    sorted_function_names = sorted(activated_skills.keys(), key=lambda x: [int(y) if y.isdigit() else y for y in re.split('([0-9]+)', x)])
 
+    # Iterate through the sorted function names
+    for function_name in sorted_function_names:
+        print(f"Executing {function_name}...")
+        # Execute each function stored in the activated_skills dictionary
+        activated_skills[function_name]()
+
+# Define the directory where skill functions are stored
+skills_directory = 'skills'
+
+# Import all functions from the skills directory
+skills_dict = import_all_functions_from_directory(skills_directory)
+
+# Extract skills that are activated by a specific keyword
+keyword_activated_skills_dict = extract_activated_skills_from_directory(skills_directory, "KEYWORD ACTIVATED SKILL:")    
+print(keyword_activated_skills_dict)
+
+# Extract skills that are activated by a language model
+lm_activated_skills_dict = extract_activated_skills_from_directory(skills_directory, "LM ACTIVATED SKILL:")    
+print(lm_activated_skills_dict)
+
+
+# Define a function for conditional execution of skills
+def conditional_execution(function_name, transcription_response, conversation, scratch_pad, conditions_list=[], LMGeneratedParameters=""):
+    """
+    Executes a function based on a list of conditions, passing additional parameters
+    and handling return values.
+
+    Args:
+    function_name (str): The name of the function to execute.
+    transcription_response (str): The current transcription response.
+    conversation (object): Current state or context of the conversation.
+    scratch_pad (dict): A dictionary to store data across function calls.
+    conditions_list (list of list of str): Conditions that trigger the function execution.
+    LMGeneratedParameters (str): Additional parameters generated by the language model.
+
+    Returns:
+    tuple: A tuple containing updated conversation, scratch_pad, and skill_response from the executed function.
+    """
+    # Try to get the function from the global namespace
+    function_to_run = globals().get(function_name)
+    
+    # If not found in globals, try to get it from the current module
+    if function_to_run is None:
+        current_module = sys.modules[__name__]
+        function_to_run = getattr(current_module, function_name, None)
+    
+    # Raise an error if the function is not found
+    if function_to_run is None:
+        raise ValueError(f"The specified function '{function_name}' is not defined.")
+    
+    # Raise an error if the function is not callable
+    if not callable(function_to_run):
+        raise ValueError(f"The function '{function_name}' is not callable.")
+    
+    # Check conditions and execute the function if conditions are met
+    if len(conditions_list) > 0:
+        for condition in conditions_list:
+            # Check if all substrings in the condition are present in the transcription_response
+            if all(substring.lower() in transcription_response.lower() for substring in condition):
+                # Execute the function if the condition is met
+                skill_response, updated_conversation, updated_scratch_pad = function_to_run(transcription_response, conversation, scratch_pad, LMGeneratedParameters)
+                return skill_response, updated_conversation, updated_scratch_pad
     else:
-        return "No image or text data found in the clipboard."
-
-# Functions `handle_captioning` and `handle_ocr` need to be defined elsewhere in your code.
-# They should update the `results` dictionary with keys 'caption' and 'ocr' respectively.
-
-def get_caption_from_screenshot_gpt4o_hyprlab():
-
-
-    # Take a screenshot and open it with PIL
-    print("Taking a screenshot...")
-    screenshot_image = screenshot()  # Uses PyAutoGUI to take a screenshot
-    width, height = screenshot_image.size
-    new_height = 500
-    new_width = int((new_height / height) * width)
+        # If no conditions are specified, execute the function anyway
+        skill_response, updated_conversation, updated_scratch_pad = function_to_run(transcription_response, conversation, scratch_pad, LMGeneratedParameters)
+        return skill_response, updated_conversation, updated_scratch_pad    
     
-    # Resizing with the correct resampling filter
-    resized_image = screenshot_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    # If no conditions are met, return unchanged objects and None for skill_response
+    return "", conversation, scratch_pad            
 
-    # Save the resized image as JPEG
-    img_byte_arr = io.BytesIO()
-    resized_image.save(img_byte_arr, format='JPEG', quality=70)
-    screenshot_image.save(img_byte_arr, format='JPEG', quality=70)
-    img_byte_arr = img_byte_arr.getvalue()
-
-    # Send image for captioning and return the result
-    combined_caption = send_image_for_captioning_and_ocr_hyprlab_gpt4o(img_byte_arr, HYPRLAB_API_KEY)
-
-    print(combined_caption)
-   
-  
-    return combined_caption
-
-
-def get_caption_from_clipboard_florence2():
-    # Check clipboard content
-
-    try:
-       content = ImageGrab.grabclipboard()
-    except:
-        content = clipboard.paste()
-        print(type(content))
-        if isinstance(content, str):
-            print("Returning text from the clipboard...")
-            return content
-    print(content)
-    print(type(content))
+# Define a function to parse a string representation of a list of lists
+def parse_list_of_lists(input_str):
+    """
+    Parses a string representing a list of lists, where each sublist contains strings.
+    The function handles irregular spacing and variations in quote usage.
     
-    if isinstance(content, Image.Image):
-        print("Processing an image from the clipboard...")
-        if content.mode != 'RGB':
-            content = content.convert('RGB')
-            
-        # Save image to a byte array
-        img_byte_arr = io.BytesIO()
-        content.save(img_byte_arr, format='JPEG', quality=60)
-        img_byte_arr = img_byte_arr.getvalue()
-
-        results = {}
-        
-        # Define tasks for threads
-        thread1 = threading.Thread(target=handle_captioning_florence2, args=(img_byte_arr, results))
-        thread2 = threading.Thread(target=handle_ocr_florence2, args=(img_byte_arr, results))
-
-        # Start threads
-        thread1.start()
-        thread2.start()
-
-        # Wait for threads to complete
-        thread1.join()
-        thread2.join()
-
-        # Combine results and return
-        combined_caption = results.get('caption', '') + "\nOCR RESULTS:\n" + results.get('ocr', '')
-        return combined_caption
-
-    else:
-        return "No image or text data found in the clipboard."
-
-# Functions `handle_captioning` and `handle_ocr` need to be defined elsewhere in your code.
-# They should update the `results` dictionary with keys 'caption' and 'ocr' respectively.
-
-def get_caption_from_screenshot_florence2():
-
-
-    # Take a screenshot and open it with PIL
-    print("Taking a screenshot...")
-    screenshot_image = screenshot()  # Uses PyAutoGUI to take a screenshot
-    #width, height = screenshot_image.size
-    #new_height = 800
-    #new_width = int((new_height / height) * width)
+    Args:
+    input_str (str): A string representation of a list of lists.
     
-    # Resizing with the correct resampling filter
-    #resized_image = screenshot_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    Returns:
+    list of list of str: The parsed list of lists.
+    """
+    # Normalize the string by replacing single quotes with double quotes
+    normalized_str = re.sub(r"\'", "\"", input_str)
 
-    # Save the resized image as JPEG
-    img_byte_arr = io.BytesIO()
-    #resized_image.save(img_byte_arr, format='JPEG', quality=60)
-    screenshot_image.save(img_byte_arr, format='JPEG', quality=60)
-    img_byte_arr = img_byte_arr.getvalue()
-
-    # Send image for captioning and return the result
-    #caption = send_image_for_captioning(img_byte_arr)
-    #ocr_result= send_image_for_ocr(img_byte_arr)
-    #print(ocr_result)
-    #caption += "\nOCR RESULTS:\n"+ocr_result
+    # Extract the sublists using a regular expression that captures contents inside brackets
+    sublist_matches = re.findall(r'\[(.*?)\]', normalized_str)
     
-    results = {}
-    
-    thread1 = threading.Thread(target=handle_captioning_florence2, args=(img_byte_arr, results))
-    thread2 = threading.Thread(target=handle_ocr_florence2, args=(img_byte_arr, results))
+    # Process each match to extract individual string elements
+    result = []
+    for sublist in sublist_matches:
+        # Extract string elements inside the quotes
+        strings = re.findall(r'\"(.*?)\"', sublist)
+        result.append(strings)
 
-    # Start threads
-    thread1.start()
-    #time.sleep(2)
-    thread2.start()
-
-    # Wait for threads to complete
-    thread1.join()
-    thread2.join()
-    print(results)
-    # Combine results and print
-    combined_caption = results['caption'] + "\nOCR RESULTS:\n"+ results['ocr']
-        
-    return combined_caption
+    return result
 
 
-
-def open_site(url):
-    # Use subprocess.Popen to open the browser
-    process = subprocess.Popen(['xdg-open', url])
-    
-    # Wait for 2 seconds
-    time.sleep(1)
-    
-    # Kill the process
-    process.terminate()  # Safely terminate the process
-    # If terminate doesn't kill the process, you can use kill():
-    # process.kill()
-    
-def extract_urls_to_open(input_string):
-    # Define a regular expression pattern to find URLs within <open-url> tags
-    pattern = r"<open-url>(https?://[^<]+)</open-url>"
-    
-    # Use re.findall to extract all occurrences of the pattern
-    urls = re.findall(pattern, input_string)
-    
-    return urls
-
-
-def extract_questions_to_send_to_askorkg(input_string):
-    # Define a regular expression pattern to find content within <open-askorkg>...</open-orkg> tags
-    pattern = r"<open-askorkg>(.*?)</open-askorkg>"
-    
-    # Use re.findall to extract all occurrences of the pattern
-    contents = re.findall(pattern, input_string)
-    
-    # Return the content of the first tag pair, or None if there are no matches
-    return contents[0] if contents else None
-
-
-def extract_questions_to_send_to_wikipedia(input_string):
-    # Define a regular expression pattern to find content within <open-askorkg>...</open-orkg> tags
-    pattern = r"<open-wikipedia>(.*?)</open-wikipedia>"
-    
-    # Use re.findall to extract all occurrences of the pattern
-    contents = re.findall(pattern, input_string)
-    
-    # Return the content of the first tag pair, or None if there are no matches
-    return contents[0] if contents else None
-    
-
-
-
-
-
-# Load environment variables from .env file
-load_dotenv()
-
-
-
-
+# Define LanguageModelProcessor class
 class LanguageModelProcessor:
-    def __init__(self, api_type="together", model_name="NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO", api_key=None, 
-                 base_url=None, temperature=0, max_tokens=None):
-        # Initialize the language model (LLM) based on the API type
-        self.llm = self._initialize_llm(api_type, model_name, api_key, base_url, temperature, max_tokens)
+    def __init__(self):
+        # Initialize the language model (LLM) using a configuration
+        self.llm = get_llm(llm_config)
 
-        # Initialize conversation memory
+        # Initialize conversation memory to store chat history
         self.memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-        # Load system prompt from file
+        # Load system prompt from a file
         with open('system_prompt.txt', 'r') as file:
             system_prompt = file.read().strip()
         
-        # Create chat prompt template
+        # Create a chat prompt template with system message, chat history, and user input
         self.prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(system_prompt),
             MessagesPlaceholder(variable_name="chat_history"),
             HumanMessagePromptTemplate.from_template("{text}")
         ])
 
-        # Create conversation chain using RunnableSequence
-        self.conversation = RunnableSequence(
-            self.prompt | self.llm
+        # Create a conversation chain combining the LLM, prompt, and memory
+        self.conversation = LLMChain(
+            llm=self.llm,
+            prompt=self.prompt,
+            memory=self.memory
         )
-
-    def _initialize_llm(self, api_type, model_name, api_key, base_url, temperature, max_tokens):
-        if api_type == "openai":
-            return ChatOpenAI(
-                temperature=temperature,
-                model_name=model_name,
-                openai_api_key=api_key or os.getenv("OPENAI_API_KEY"),
-                max_tokens=max_tokens
-            )
-        elif api_type == "together":
-            return Together(
-                model=model_name,
-                temperature=temperature,
-                together_api_key=api_key or os.getenv("TOGETHER_API_KEY"),
-                max_tokens=max_tokens
-            )
-        elif api_type == "vllm":
-            return VLLM(
-                model=model_name,
-                trust_remote_code=True,
-                inference_server_url=base_url,
-                max_tokens=max_tokens
-            )
-        elif api_type == "ollama":
-            return Ollama(
-                model=model_name,
-                base_url=base_url or "http://localhost:11434"
-            )
-        else:
-            raise ValueError(f"Unsupported API type: {api_type}")
 
     def process(self, text):
         # Add user message to memory
         self.memory.chat_memory.add_user_message(text)
 
-        # Record start time
+        # Record start time for performance measurement
         start_time = time.time()
 
         # Get response from LLM
-        response = self.conversation.invoke({
-            "text": text,
-            "chat_history": self.memory.chat_memory.messages
-        })
+        response = self.conversation.invoke({"text": text})
         
         # Record end time
         end_time = time.time()
 
-        # Extract the response text
-        response_text = response.content if hasattr(response, 'content') else str(response)
-
         # Add AI response to memory
-        self.memory.chat_memory.add_ai_message(response_text)
+        self.memory.chat_memory.add_ai_message(response['text'])
 
-        # Calculate elapsed time
+        # Calculate and print elapsed time
         elapsed_time = int((end_time - start_time) * 1000)
-        print(f"LLM ({elapsed_time}ms): {response_text}")
-        return response_text
+        print(f"LLM ({elapsed_time}ms): {response['text']}")
+        return response['text']
 
+    def get_system_prompt(self):
+        # Find and return the SystemMessagePromptTemplate from the prompt messages
+        for message in self.prompt.messages:
+            if isinstance(message, SystemMessagePromptTemplate):
+                return message.prompt.template
+        return None
         
+    def update_system_prompt(self, new_prompt):
+        # Update the system prompt with a new one
+        self.system_prompt = new_prompt
+
+        # Recreate the prompt template with the new system prompt
+        self.prompt = ChatPromptTemplate.from_messages([
+            SystemMessagePromptTemplate.from_template(self.system_prompt),
+            MessagesPlaceholder(variable_name="chat_history"),
+            HumanMessagePromptTemplate.from_template("{text}")
+        ])
+
+        # Recreate the conversation chain with the updated prompt
+        self.conversation = LLMChain(
+            llm=self.llm,
+            prompt=self.prompt,
+            memory=self.memory
+        )
+
 # Define TextToSpeech class
-import subprocess
-import requests
-import os
-import shutil  # Import shutil for checking executables
-from pynput import keyboard
-# This function abstracts the API-specific implementation
-def stream_audio_from_text(text, api_key, model_name):
-    """
-    Streams audio from the given text using the specified API.
-
-    Args:
-        text (str): The text to convert to speech.
-        api_key (str): API key for authentication.
-        model_name (str): Model name to be used for TTS generation.
-
-    Returns:
-        Generator: Yields chunks of audio data.
-    """
-    DEEPGRAM_URL = f"https://api.deepgram.com/v1/speak?model={model_name}&performance=some&encoding=linear16&sample_rate=24000"
-    headers = {
-        "Authorization": f"Token {api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {"text": text}
-    
-    with requests.post(DEEPGRAM_URL, stream=True, headers=headers, json=payload) as r:
-        for chunk in r.iter_content(chunk_size=1024):
-            yield chunk
-
-
-import os
-import shutil
-import subprocess
-import keyboard
-from threading import Event
-
 class TextToSpeech:
-    DG_API_KEY = os.getenv("DEEPGRAM_API_KEY")
-    MODEL_NAME = "aura-helios-en"
-
     def __init__(self):
         self.player_process = None
         self.should_stop = False
@@ -439,24 +371,27 @@ class TextToSpeech:
         return shutil.which(lib_name) is not None
 
     def stop(self):
+        # Stop the TTS playback and keyboard listener
         self.should_stop = True
         if self.player_process:
             self.player_process.terminate()
             self.player_process = None
         if self.listener:
-            self.listener.stop()  # Stop the keyboard listener
+            self.listener.stop()
 
     def on_activate(self):
+        # Callback for hotkey activation
         print("Hotkey activated - stopping TTS.")
         self.stop()
 
     def speak(self, text, stop_event: Event):
+        # Check if ffplay is installed (required for audio streaming)
         if not self.is_installed("ffplay"):
             raise ValueError("ffplay not found, necessary to stream audio.")
 
-        # Setup hotkey listener
-        with keyboard.GlobalHotKeys({
-                '<ctrl>+<shift>': self.on_activate}) as self.listener:
+        # Setup hotkey listener for Ctrl+Shift to stop TTS
+        with keyboard.GlobalHotKeys({'<ctrl>+<shift>': self.on_activate}) as self.listener:
+            # Prepare ffplay command for audio playback
             player_command = ["ffplay", "-autoexit", "-", "-nodisp"]
             self.player_process = subprocess.Popen(
                 player_command,
@@ -466,272 +401,185 @@ class TextToSpeech:
             )
 
             try:
-                audio_stream_generator = stream_audio_from_text(text, self.DG_API_KEY, self.MODEL_NAME)
+                # Generate audio stream from text
+                audio_stream_generator = stream_audio_from_text(text, tts_api_key, tts_model)
                 for chunk in audio_stream_generator:
+                    # Check for stop conditions
                     if stop_event.is_set() or self.should_stop:
                         break
                     if chunk:
                         try:
+                            # Write audio chunk to ffplay process
                             self.player_process.stdin.write(chunk)
                             self.player_process.stdin.flush()
                         except BrokenPipeError:
                             print("TTS playback stopped.")
                             break
             finally:
+                # Clean up resources
                 if self.player_process and self.player_process.stdin:
                     self.player_process.stdin.close()
                 if self.player_process:
                     self.player_process.wait()
                 self.player_process = None
+                
+                
 
+def save_scratch_pad_to_file(scratch_pad, filename="ScratchPad.json"):
+    """
+    Saves the dictionary 'scratch_pad' to a file specified by 'filename'.
+    """
+    with open(filename, "w") as file:
+        json.dump(scratch_pad, file, indent=4)
 
+def load_scratch_pad_from_file(filename="ScratchPad.json"):
+    """
+    Loads a dictionary from a file specified by 'filename'.
+    """
+    with open(filename, "r") as file:
+        return json.load(file)
 
-# Define TranscriptCollector class
-class TranscriptCollector:
-    def __init__(self):
-        self.reset()
+def extract_opening_and_closing_tags(input_string):
+    """
+    Extracts the first opening and closing tags from the input string.
 
-    def reset(self):
-        # Reset transcript parts
-        self.transcript_parts = []
+    Args:
+    input_string (str): The string to search for tags.
 
-    def add_part(self, part):
-        # Add a part to the transcript
-        self.transcript_parts.append(part)
+    Returns:
+    tuple: A tuple containing the first opening tag and the first closing tag.
+    """
+    # Regex to find tags
+    tags = re.findall(r'<[^>]+>', input_string)
+    
+    if not tags:
+        return None, None  # Return None if no tags are found
 
-    def get_full_transcript(self):
-        # Get the full transcript
-        return ' '.join(self.transcript_parts)
+    # Find the first opening tag
+    opening_tag = next((tag for tag in tags if not tag.startswith('</')), None)
+    # Find the first closing tag after the first opening tag
+    closing_tag = next((tag for tag in tags if tag.startswith('</') and tag[2:-1] in opening_tag), None)
 
-# Create a global transcript collector instance
-transcript_collector = TranscriptCollector()
+    return opening_tag, closing_tag
 
-# Define get_transcript function
-async def get_transcript(callback):
-    transcription_complete = asyncio.Event()  # Event to signal transcription completion
-
-    try:
-        # Set up Deepgram client
-        config = DeepgramClientOptions(options={"keepalive": "true"})
-        deepgram: DeepgramClient = DeepgramClient("", config)
-
-        dg_connection = deepgram.listen.asynclive.v("1")
-        print("Listening...")
-
-        async def on_message(self, result, **kwargs):
-            sentence = result.channel.alternatives[0].transcript
-            
-            if not result.speech_final:
-                transcript_collector.add_part(sentence)
-            else:
-                # This is the final part of the current sentence
-                transcript_collector.add_part(sentence)
-                full_sentence = transcript_collector.get_full_transcript()
-                if len(full_sentence.strip()) > 0:
-                    full_sentence = full_sentence.strip()
-                    print(f"Human: {full_sentence}")
-                    callback(full_sentence)  # Call the callback with the full_sentence
-                    transcript_collector.reset()
-                    transcription_complete.set()  # Signal to stop transcription and exit
-
-        # Set up Deepgram connection event handler
-        dg_connection.on(LiveTranscriptionEvents.Transcript, on_message)
-
-        # Set up Deepgram live options
-        options = LiveOptions(
-            model="nova-2",
-            punctuate=True,
-            language="en-US",
-            encoding="linear16",
-            channels=1,
-            sample_rate=16000,
-            endpointing=300,
-            smart_format=True
-            
-        )
-
-        # Start Deepgram connection
-        await dg_connection.start(options)
-
-        # Open a microphone stream on the default input device
-        microphone = Microphone(dg_connection.send)
-        microphone.start()
-
-        # Wait for the transcription to complete
-        await transcription_complete.wait()
-
-        # Wait for the microphone to close
-        microphone.finish()
-
-        # Indicate that we've finished
-        await dg_connection.finish()
-
-    except Exception as e:
-        print(f"Could not open socket: {e}")
-        return
-
-# Define ConversationManager class
 class ConversationManager:
-    def __init__(self, porcupine, recorder):
+    def __init__(self):
         self.transcription_response = ""
         self.llm = LanguageModelProcessor()
         self.tts = TextToSpeech()
-        self.porcupine = porcupine
-        self.recorder = recorder
         self.stop_event = asyncio.Event()
         self.conversation_active = False
+        self.ScratchPad = {}  # Scratch pad for skill functions to store persistent variables
 
-    async def listen_for_wake_words(self):
-        while self.conversation_active:
-            frames = self.recorder.read()
-            keyword_index = self.porcupine.process(frames)
-            if keyword_index == 1:  # "Stop Buddy" detected
-                print("Wake word 'Stop Buddy' detected!")
-                self.stop_event.set()
-                self.tts.stop()
-                break
-            await asyncio.sleep(0.01)  # Small delay to allow other tasks to run
+        # Try to load existing scratch pad, if it fails, use an empty dictionary
+        try:
+            self.ScratchPad = load_scratch_pad_from_file()
+        except:
+            pass
+
+    async def start_conversation(self):
+        self.conversation_active = True
+        await self.main()
 
     async def speak_response(self, response):
-        self.recorder.start()  # Ensure recorder is started
         tts_task = asyncio.to_thread(self.tts.speak, response, self.stop_event)
-        wake_word_task = asyncio.create_task(self.listen_for_wake_words())
-        
         try:
             await tts_task
         except Exception as e:
             print(f"TTS error: {e}")
-        finally:
-            wake_word_task.cancel()
-            self.recorder.stop()  # Stop recorder after TTS
 
     async def main(self):
         def handle_full_sentence(full_sentence):
             self.transcription_response = full_sentence
 
-        self.conversation_active = True
         while self.conversation_active:
             self.stop_event.clear()
             self.tts = TextToSpeech()  # Create a new TTS instance for each response
             
             print("Listening for your command...")
-            self.recorder.start()
             await get_transcript(handle_full_sentence)
-            self.recorder.stop()
             
             if "goodbye" in self.transcription_response.lower():
                 self.conversation_active = False
                 break
-                
-                
-            what_buddy_sees = ""
-            if "have a look" in self.transcription_response.lower() or "buddy look" in self.transcription_response.lower() or "look buddy" in self.transcription_response.lower() or "buddy, look" in self.transcription_response.lower() or "look, buddy" in self.transcription_response.lower() :
-                
-                if "screenshot" in self.transcription_response.lower() or "screen shot" in self.transcription_response.lower():
-                    what_buddy_sees = "[BUD-E is seeing this: " + get_caption_from_screenshot_gpt4o_hyprlab() + " ] (Continue the conversation as BUD-E considering what it is seeing) "
-                else:
-                    what_buddy_sees = "[BUD-E is seeing this: " + get_caption_from_clipboard_gpt4o_hyprlab() + " ] (Continue the conversation as BUD-E considering what it is seeing) "
 
-
-
-            llm_response = self.llm.process(self.transcription_response+what_buddy_sees)
-
-            extracted_url_to_open = extract_urls_to_open(llm_response)
-        
-
-            # Possible responses for opening a URL
-            url_open_responses = [
-                "Sure! Let me know if there's anything else you need.",
-                "All set! Anything else you'd like to explore?",
-                "The site has been opened! Feel free to ask more questions.",
-                "Done! Can I assist you with anything else today?",
-                "The link is now open! Let me know if you need further assistance."
-            ]
-
-            # Selecting a random response from the list
-            if len(extracted_url_to_open) > 0:
-                open_site(extracted_url_to_open[0])
-                llm_response = random.choice(url_open_responses)
-
-
-            question_for_askorkg= extract_questions_to_send_to_askorkg(llm_response)
-            # Possible responses for using Ask ORKG
-            ask_orkg_responses = [
-                "Sure! I will use the Ask Open Knowledge Graph service to analyze the question: {0}",
-                "Got it! Let's see what Ask Open Knowledge Graph has on: {0}",
-                "I'm on it! Checking Ask Open Knowledge Graph for information about: {0}",
-                "Excellent question! I'll consult Ask Open Knowledge Graph about: {0}",
-                "One moment! I'll look that up on Ask Open Knowledge Graph for you about: {0}"
-            ]
-
-            if question_for_askorkg is not None:
-                open_site("https://ask.orkg.org/search?query=" + question_for_askorkg)
-                llm_response = random.choice(ask_orkg_responses).format(question_for_askorkg)
-   
-                      
-            question_for_wikipedia= extract_questions_to_send_to_wikipedia(llm_response)
-            # Possible responses for searching Wikipedia
-            wikipedia_responses = [
-                "Sure! Here are the Wikipedia search results for: {0}",
-                "Let me pull up Wikipedia for you to explore: {0}",
-                "Checking Wikipedia for: {0}. Here's what I found!",
-                "I'll search Wikipedia for that. Hold on: {0}",
-                "One moment, I'm getting the information from Wikipedia on: {0}"
-            ]
-
-            if question_for_wikipedia is not None:
-                open_site("https://en.wikipedia.org/w/index.php?search=" + question_for_wikipedia)
-                llm_response = random.choice(wikipedia_responses).format(question_for_wikipedia)
-
- 
-                      
-            print(f"AI: {llm_response}")
-
-            await self.speak_response(llm_response)
-
-            if self.stop_event.is_set():
-                print("TTS was interrupted. Ready for next command.")
+            all_skill_responses = ""
+            # Process keyword-activated skills
+            for keyword_activated_function in keyword_activated_skills_dict:
+                skill_response = ""
+                print(keyword_activated_function)
+                condition_list = parse_list_of_lists(keyword_activated_skills_dict[keyword_activated_function])
+                try:
+                    skill_response, updated_conversation, updated_scratch_pad = conditional_execution(
+                        keyword_activated_function, self.transcription_response, 
+                        self.llm.conversation, self.ScratchPad, condition_list
+                    )
+                    self.llm.conversation = updated_conversation
+                    self.ScratchPad = updated_scratch_pad
+                    all_skill_responses += "\n" + skill_response
+                except:
+                    pass
+     
+            print(self.transcription_response + all_skill_responses)
             
+            # Update system prompt with LM activated skills
+            system_prompt = self.llm.get_system_prompt()
+            for lm_activated_skill in lm_activated_skills_dict:
+                system_prompt += "\n" + lm_activated_skills_dict[lm_activated_skill]
+            self.llm.update_system_prompt(system_prompt)
+
+            # Process the transcription and generate a response
+            llm_response = self.llm.process(self.transcription_response + all_skill_responses)
+            print("llm_response", str(llm_response))
+
+            # Process LM-activated skills
+            perform_lm_skill = False
+            for lm_activated_function in lm_activated_skills_dict:
+                skill_response = ""
+                print(lm_activated_function)
+                opening_tag, closing_tag = extract_opening_and_closing_tags(lm_activated_skills_dict[lm_activated_function])
+                print(opening_tag, closing_tag)
+                
+                if (opening_tag and closing_tag and 
+                    opening_tag.lower() in llm_response.lower() and 
+                    closing_tag.lower() in llm_response.lower()):  
+                    perform_lm_skill = True
+                    opening_tag_name = re.escape(opening_tag[1:-1])
+                    closing_tag_name = re.escape(closing_tag[2:-1])
+
+                    pattern = rf"<{opening_tag_name}>(.*?)</{closing_tag_name}>"
+                    LMGeneratedParameters = re.findall(pattern, llm_response)
+                    LMGeneratedParameters = LMGeneratedParameters[0]
+                    print("LMGeneratedParameters", LMGeneratedParameters)
+               
+                    try:
+                        skill_response, updated_conversation, updated_scratch_pad = conditional_execution(
+                            lm_activated_function, self.transcription_response, 
+                            self.llm.conversation, self.ScratchPad, [], LMGeneratedParameters
+                        )
+                        self.llm.conversation = updated_conversation
+                        self.ScratchPad = updated_scratch_pad
+                        break  # Allow only 1 LM activated function to get executed
+                    except:
+                        pass
+
+            if perform_lm_skill:
+                print(f"AI: {skill_response}")
+                await self.speak_response(skill_response)
+            else:
+                print(f"AI: {llm_response}")
+                await self.speak_response(llm_response)           		             
             self.transcription_response = ""
 
         print("Conversation ended. Listening for wake words again...")
 
 async def main():
-    access_key = os.getenv("PORCUPINE_API_KEY") #  # Replace with your Picovoice AccessKey
-    model_path = "hey-buddy_en_linux_v3_0_0.ppn"
-    model2_path = "stop-buddy_en_linux_v3_0_0.ppn"
+    conversation_manager = ConversationManager()
+    wake_words = get_wake_words()
+    wake_word_engine = WakeWordEngine(wake_words, conversation_manager.start_conversation)
+    wake_word_engine.initialize()
+    print("Listening for wake words...")
+    await wake_word_engine.detect()
 
-    porcupine = pvporcupine.create(access_key=access_key, keyword_paths=[model_path, model2_path])
-
-    print("Listening for wake word 'Hey Buddy'...")
-
-    while True:
-        try:
-            recorder = pvrecorder.PvRecorder(device_index=-1, frame_length=porcupine.frame_length)
-            recorder.start()
-
-            conversation_manager = ConversationManager(porcupine, recorder)
-
-            while True:
-                frames = recorder.read()
-                keyword_index = porcupine.process(frames)
-                if keyword_index == 0:  # "Hey Buddy" detected
-                    print("Wake word 'Hey Buddy' detected!")
-                    await conversation_manager.main()
-                    print("Conversation ended. Listening for wake word 'Hey Buddy' again...")
-                    break  # Break the inner loop to create a new recorder
-
-        except KeyboardInterrupt:
-            print("Stopping...")
-            break
-
-        finally:
-            recorder.stop()
-            recorder.delete()
-
-    porcupine.delete()
-
-# Entry point of the script
 if __name__ == "__main__":
     asyncio.run(main())
-    
