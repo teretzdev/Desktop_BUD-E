@@ -105,7 +105,8 @@ def get_caption_from_clipboard_gpt4o_hyprlab(transcription_response, conversatio
         content = clipboard.paste()
         print(type(content))
         if isinstance(content, str):
-            if "https://www.youtu" in content and len(content)<100:
+            if ("https://www.youtu" in content or "https://youtu" in content ) and len(content)<100:
+                print("Analyzing Youtube Video")
                 video_metadata= download_youtube_video_info(find_first_youtube_url(content))
                 print(video_metadata)
                 subtitle_text= extract_and_concat_subtitle_text(str(video_metadata))
@@ -368,6 +369,7 @@ def extract_questions_to_send_to_wikipedia(input_string):
     contents = re.findall(pattern, input_string)
     
     # Return the content of the first tag pair, or None if there are no matches
-    return contents[0] if contents else None
+    return  skill_response, conversation, scratch_pad
     
+
 

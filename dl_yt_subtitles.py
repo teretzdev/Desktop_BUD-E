@@ -40,9 +40,12 @@ def extract_and_concat_subtitle_text(subtitle_text):
     # Regex to find all occurrences of text within <c>...</c> tags
     pattern = re.compile(r'<c>(.*?)<\/c>')
     matches = pattern.findall(subtitle_text)
-    
+    concatenated_text = "Video Title:" + extract_title(subtitle_text)
+    concatenated_text += "\nDescription: "+  extract_description(subtitle_text)
     # Joining all the matched texts with a space
-    concatenated_text = ''.join(matches)
+    concatenated_text += "\nSubtitles: "''.join(matches)
+    
+    
     return concatenated_text
 
 def extract_title(text):
