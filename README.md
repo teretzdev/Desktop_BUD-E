@@ -33,7 +33,7 @@ BUD-E is dedicated to fostering a community-centric development environment with
 
 ## Embedded YouTube Video
 
-[![BUD-E Framework Introduction](https://school-bud-e--preview.deno.dev/logo.png)](https://youtu.be/RYdWd7hRZQk "BUD-E explains itself :)")
+[![BUD-E Framework Introduction](https://github.com/LAION-AI/Desktop_BUD-E/blob/main/BUD-E-Yt.jpg?raw=true)](https://youtu.be/RYdWd7hRZQk "BUD-E explains itself")
 
 ## Call for Collaboration
 
