@@ -40,6 +40,6 @@ BUD-E is dedicated to fostering a community-centric development environment with
 
 ## Call for Collaboration
 
-This project is led by LAION, with collaboration from Camb AI, Intel, Alignment Labs, the Max Planck Institute for Intelligent Systems in Tübingen, and the Tübingen AI Center. We invite collaboration from open-source communities, educational and research institutions, and interested companies to help scale BUD-E’s impact.
+This project is led by LAION, with support from Intel, Camb AI, Alignment Labs, the Max Planck Institute for Intelligent Systems in Tübingen, and the Tübingen AI Center. We invite collaboration from open-source communities, educational and research institutions, and interested companies to help scale BUD-E’s impact.
 
 We encourage contributions that push the boundaries of educational and research tools, leveraging the collective creativity and expertise of the global open-source community.
