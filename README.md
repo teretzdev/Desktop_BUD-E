@@ -12,7 +12,7 @@ BUD-E, short for "Buddy", is an innovative voice assistant framework designed to
 
 ## Key Features and Flexibility
 
-BUD-E integrates several core components including a speech-to-text model, a language model, and a text-to-speech model. These components are interchangeable and can be accessed either locally or through APIs. The framework supports integration with services from leading providers like OpenAI and Anthropic, or allows users to deploy their own models using open-source frameworks like VLLM.
+BUD-E integrates several core components including a speech-to-text model, a language model, and a text-to-speech model. These components are interchangeable and can be accessed either locally or through APIs. The framework supports integration with services from leading providers like OpenAI and Anthropic, or allows users to deploy their own models using open-source frameworks like Ollama or VLLM.
 
 ### Skills Interface
 
