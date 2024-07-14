@@ -16,7 +16,8 @@ BUD-E integrates several core components including a speech-to-text model, a lan
 
 ### Skills Interface
 
-Any Python function can become a skill, allowing the voice assistant to handle tasks ranging from processing screenshots with captioning and OCR models to interacting with clipboard contents including text, images, and links. BUD-E supports dynamic skill activation, either through model-inferred keywords or direct keyword activation based on user input.
+Any Python function can become a skill, allowing the voice assistant to handle tasks ranging from processing screenshots with captioning and OCR models to interacting with clipboard contents including text, images, and links. BUD-E supports dynamic skill activation, either by allowing the language model to choose a skill from a "menu" that gets dynamically added to the system prompt or through direct keywords said by the user. 
+Skills get dynamically added from the "skills" folder to the system, without any need to change the main code (buddy.py). Think of it as similar to adding mods to the "Mods" folder in Minecraft.
 
 ## Community and Educational Focus
 
