@@ -32,7 +32,7 @@ from dl_yt_subtitles import download_youtube_video_info, extract_and_concat_subt
 
 # URL of the API
 url = 'https://api.hyprlab.io/v1/chat/completions'
-HYPRLAB_API_KEY = "hypr-lab-dhItb5DFQctQvafMzqgKT3BlbkFJfot58G96B2VMaS4u0015" # os.getenv("HYPRLAB_API_KEY")
+HYPRLAB_API_KEY = "hypr-lab-XXXXXXXXXXXXXXXX" # os.getenv("HYPRLAB_API_KEY")
 
 florence2_server_url = "http://213.173.96.19:5002/" 
 
