@@ -1,11 +1,11 @@
-# BUD-E (Buddy) Framework 
+# BUD-E explains itself
 
-## BUD-E explains itself
 <p align="center">
   <a href="https://youtu.be/RYdWd7hRZQk">
     <img src="https://github.com/LAION-AI/Desktop_BUD-E/blob/main/BUD-E-Yt.jpg?raw=true" alt="BUD-E Framework Introduction">
   </a>
 </p>
+
 ## Project Vision
 
 BUD-E, short for "Buddy", is an innovative voice assistant framework designed to be a plug-and-play interface that allows seamless interaction with open-source AI models and API interfaces. The framework aims to empower anyone to contribute and innovate, particularly in education and research, by maintaining a low entry threshold for writing new skills and building a supportive community.
