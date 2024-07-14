@@ -1,15 +1,44 @@
-# Quick Voice bot demo
+# BUD-E (Buddy) Framework Launch
 
-This is a alpha demo showing a bot that uses Text-To-Speech, Speech-To-Text, and a language model to have a conversation with a user.
+## Project Vision
 
-This demo is set up to use [Deepgram](www.deepgram.com) for the audio service and [Groq](https://groq.com/) the LLM.
+BUD-E, short for "Buddy", is an innovative voice assistant framework designed to be a plug-and-play interface that allows seamless interaction with open-source AI models and API interfaces. The framework aims to empower anyone to contribute and innovate, particularly in education and research, by maintaining a low entry threshold for writing new skills and building a supportive community.
 
-This demo utilizes streaming for sst and tts to speed things up.
+## Key Features and Flexibility
 
-Video tutorial coming soon
+BUD-E integrates several core components including a speech-to-text model, a language model, and a text-to-speech model. These components are interchangeable and can be accessed either locally or through APIs. The framework supports integration with services from leading providers like OpenAI and Anthropic, or allows users to deploy their own models using open-source frameworks like VLLM.
 
-The files in `building_blocks` are the isolated components if you'd like to inspect them
+### Skills Interface
 
-```
-python3 QuickAgent.py
-```
+Any Python function can become a skill, allowing the voice assistant to handle tasks ranging from processing screenshots with captioning and OCR models to interacting with clipboard contents including text, images, and links. BUD-E supports dynamic skill activation, either through model-inferred keywords or direct keyword activation based on user input.
+
+## Community and Educational Focus
+
+BUD-E is dedicated to fostering a community-centric development environment with a strong emphasis on education and research. The framework encourages the development of skills that aid in educational content delivery, such as navigating through specific online courses or generating custom learning paths from YouTube playlists.
+
+## Installation Instructions
+
+[Installation instructions will be added here.]
+
+## Skills
+
+### Types of Skills
+[Description of the different types of skills that can be integrated with BUD-E.]
+
+### Skill Usage
+[Instructions on how to use skills within the BUD-E framework.]
+
+### Coding New Skills
+[Guidelines and examples for coding new skills to extend the functionality of BUD-E.]
+
+## Embedded YouTube Video
+
+[![BUD-E Framework Introduction](https://school-bud-e--preview.deno.dev/logo.png)](https://youtu.be/mSB1eP3ra1I
+
+https://youtu.be/gBQoBujZF9Q "BUD-E explains itself :)")
+
+## Call for Collaboration
+
+This project is led by LAION, with collaboration from Camb AI, Intel, Alignment Labs, the Max Planck Institute for Intelligent Systems in Tübingen, and the Tübingen AI Center. We invite collaboration from open-source communities, educational and research institutions, and interested companies to help scale BUD-E’s impact.
+
+We encourage contributions that push the boundaries of educational and research tools, leveraging the collective creativity and expertise of the global open-source community.
