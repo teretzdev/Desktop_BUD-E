@@ -372,4 +372,31 @@ def extract_questions_to_send_to_wikipedia(input_string):
     return  skill_response, conversation, scratch_pad
     
 
+# LM ACTIVATED SKILL: SKILL TITLE: Search Google in Browser. DESCRIPTION: Uses a custom function to open a browser to Google's search page for any specified topic. USAGE INSTRUCTIONS: To activate this skill, use the command within the tags <open-google> ... </open-google>. For example, if the user asks 'Search Google for quantum mechanics', you should output: <open-google>quantum mechanics</open-google>.
+def search_google(transcription_response, conversation, scratch_pad, search_query):
+    # Using a simulated function to construct and open the Google search URL
+    open_site(f"https://www.google.com/search?q={search_query}")
 
+    skill_response = f"I'm searching Google for: {search_query}"
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
+
+    print("Google search initiated!")
+    return skill_response, updated_conversation, updated_scratch_pad
+
+    
+# LM ACTIVATED SKILL: SKILL TITLE: Search English Wikipedia. DESCRIPTION: This skill enables the BUD-E voice assistant to search and retrieve content from English Wikipedia based on user-provided keywords. USAGE INSTRUCTIONS: To search for content on Wikipedia, use the command with the tags <open-wikipedia> ... </open-wikipedia>. For example, if the user wants to find information on 'Quantum Computing', you should respond with: <open-wikipedia>Quantum Computing</open-wikipedia>.
+def search_en_wikipedia(transcription_response, conversation, scratch_pad, wikipedia_search_keywords):
+    open_site(f"https://en.wikipedia.org/w/index.php?search={wikipedia_search_keywords}")
+    
+    skill_response = random.choice([
+                    "Alright, I'm searching Wikipedia for: {0}",
+                    "Okay, let's check Wikipedia for details on: {0}",
+                    "Looking up Wikipedia to find information on: {0}",
+                    "Searching Wikipedia for: {0}",
+                    "I'm on it, finding information on Wikipedia about: {0}"
+                ]).format(wikipedia_search_keywords)
+    print("SUCCESS")
+    return skill_response, conversation, scratch_pad
+    
+    
