@@ -71,7 +71,7 @@ from types import ModuleType
 import sys
 
 # Import configurations from a local module
-from api_configs.configs import *
+from api_configs.configs import get_llm_config, get_tts_config, get_asr_config
 
 # Import custom functions from local modules
 from stream_tts import stream_audio_from_text
@@ -83,7 +83,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain_together import Together
-from llm_definition import get_llm
+from llm_definition import get_llm, LanguageModelProcessor
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import (
     ChatPromptTemplate,
@@ -285,79 +285,6 @@ def parse_list_of_lists(input_str):
     return result
 
 
-# Define LanguageModelProcessor class
-class LanguageModelProcessor:
-    def __init__(self):
-        # Initialize the language model (LLM) using a configuration
-        self.llm = get_llm(llm_config)
-
-        # Initialize conversation memory to store chat history
-        self.memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-
-        # Load system prompt from a file
-        with open('system_prompt.txt', 'r') as file:
-            system_prompt = file.read().strip()
-        
-        # Create a chat prompt template with system message, chat history, and user input
-        self.prompt = ChatPromptTemplate.from_messages([
-            SystemMessagePromptTemplate.from_template(system_prompt),
-            MessagesPlaceholder(variable_name="chat_history"),
-            HumanMessagePromptTemplate.from_template("{text}")
-        ])
-
-        # Create a conversation chain combining the LLM, prompt, and memory
-        self.conversation = LLMChain(
-            llm=self.llm,
-            prompt=self.prompt,
-            memory=self.memory
-        )
-
-    def process(self, text):
-        # Add user message to memory
-        self.memory.chat_memory.add_user_message(text)
-
-        # Record start time for performance measurement
-        start_time = time.time()
-
-        # Get response from LLM
-        response = self.conversation.invoke({"text": text})
-        
-        # Record end time
-        end_time = time.time()
-
-        # Add AI response to memory
-        self.memory.chat_memory.add_ai_message(response['text'])
-
-        # Calculate and print elapsed time
-        elapsed_time = int((end_time - start_time) * 1000)
-        print(f"LLM ({elapsed_time}ms): {response['text']}")
-        return response['text']
-
-    def get_system_prompt(self):
-        # Find and return the SystemMessagePromptTemplate from the prompt messages
-        for message in self.prompt.messages:
-            if isinstance(message, SystemMessagePromptTemplate):
-                return message.prompt.template
-        return None
-        
-    def update_system_prompt(self, new_prompt):
-        # Update the system prompt with a new one
-        self.system_prompt = new_prompt
-
-        # Recreate the prompt template with the new system prompt
-        self.prompt = ChatPromptTemplate.from_messages([
-            SystemMessagePromptTemplate.from_template(self.system_prompt),
-            MessagesPlaceholder(variable_name="chat_history"),
-            HumanMessagePromptTemplate.from_template("{text}")
-        ])
-
-        # Recreate the conversation chain with the updated prompt
-        self.conversation = LLMChain(
-            llm=self.llm,
-            prompt=self.prompt,
-            memory=self.memory
-        )
-
 # Define TextToSpeech class
 class TextToSpeech:
     def __init__(self):
@@ -465,7 +392,7 @@ def extract_opening_and_closing_tags(input_string):
 class ConversationManager:
     def __init__(self):
         self.transcription_response = ""
-        self.llm = LanguageModelProcessor()
+        self.llm = LanguageModelProcessor(llm_config)
         self.tts = TextToSpeech()
         self.stop_event = asyncio.Event()
         self.conversation_active = False
@@ -528,6 +455,9 @@ class ConversationManager:
                 system_prompt += "\n" + lm_activated_skills_dict[lm_activated_skill]
             self.llm.update_system_prompt(system_prompt)
 
+            #test  = self.llm.llm_call_without_memory("1+1=?")
+            #print(test)
+            
             # Process the transcription and generate a response
             llm_response = self.llm.process(self.transcription_response + all_skill_responses)
             print("llm_response", str(llm_response))
@@ -580,6 +510,9 @@ async def main():
     wake_word_engine.initialize()
     print("Listening for wake words...")
     await wake_word_engine.detect()
+
+
+
 
 if __name__ == "__main__":
     asyncio.run(main())
