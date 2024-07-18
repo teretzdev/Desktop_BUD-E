@@ -25,7 +25,23 @@ BUD-E is dedicated to fostering a community-centric development environment with
 
 ## Installation Instructions
 
-[Installation instructions will be added here.]
+The current version of BUD-E currently uses Deepgram for the audio service and Groq the LLM. For the wake word detection it uses Porcupine from Pico Voice ( https://picovoice.ai/platform/porcupine/ ). We are working on a stack of open source models that can very soon run it completely local or on your own API server.
+
+Recommendation: Make a venv and install everything in the venv. Make sure your microphone works.
+
+Set your API keys here:
+'''
+echo 'export PORCUPINE_API_KEY="yourgroqapikeyhere"' >> ~/.bashrc
+echo 'export GROQ_API_KEY="yourgroqapikeyhere"' >> ~/.bashrc
+echo 'export DEEPGRAM_API_KEY="yourdeepgramapikeyhere"' >> ~/.bashrc
+source ~/.bashrc
+
+git clone https://github.com/christophschuhmann/Desktop_BUD-E
+
+pip install -U -r requirements.txt
+ 
+python3 buddy.py
+'''
 
 ## Skills
 
