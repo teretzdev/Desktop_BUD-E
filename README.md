@@ -30,29 +30,75 @@ The current version of BUD-E currently uses Deepgram for the audio service and G
 Recommendation: Make a venv and install everything in the venv. Make sure your microphone works.
 
 Set your API keys here:
-´´´
-echo 'export PORCUPINE_API_KEY="yourgroqapikeyhere"' >> ~/.bashrc
+```sh
+echo 'export PORCUPINE_API_KEY="yourporcupineapikeyhere"' >> ~/.bashrc
 echo 'export GROQ_API_KEY="yourgroqapikeyhere"' >> ~/.bashrc
 echo 'export DEEPGRAM_API_KEY="yourdeepgramapikeyhere"' >> ~/.bashrc
 source ~/.bashrc
+```
 
+Clone the repository and install the required packages:
+```sh
 git clone https://github.com/christophschuhmann/Desktop_BUD-E
-
 pip install -U -r requirements.txt
- 
 python3 buddy.py
-´´´
+```
 
 ## Skills
 
 ### Types of Skills
-[Description of the different types of skills that can be integrated with BUD-E.]
+BUD-E supports two types of skills: LM Activated Skills and Keyword Activated Skills.
+
+#### LM Activated Skills
+These are Python functions that the language model (LM) can call when it deems the function useful for a given request. Each LM Activated Skill requires a specific comment structure before the function definition.
+
+Example:
+```python
+# LM ACTIVATED SKILL: Weather Report; DESCRIPTION: Provides the current weather for a given location.; USAGE INSTRUCTIONS: To use this skill, call it with the following tags: <weather_report(location)> Example: <weather_report("Berlin")>
+
+def weather_report(location):
+    # Implementation to fetch and return weather report for the location
+    pass
+```
+
+#### Keyword Activated Skills
+These skills are activated based on specific keyword combinations present in the user's input. They also require a specific comment structure before the function definition.
+
+Example:
+```python
+# KEYWORD ACTIVATED SKILL: [["weather", "report"], ["forecast", "today"]]
+def weather_report_skill():
+    # Implementation to fetch and return today's weather forecast
+    pass
+```
 
 ### Skill Usage
-[Instructions on how to use skills within the BUD-E framework.]
+Skills in the BUD-E framework are used either by the language model dynamically choosing the appropriate skill or by the user triggering them through specific keywords. The integration of skills is seamless, allowing for an intuitive and flexible interaction with the voice assistant.
 
 ### Coding New Skills
-[Guidelines and examples for coding new skills to extend the functionality of BUD-E.]
+Creating new skills for BUD-E involves writing Python functions and annotating them with the appropriate comments for either LM Activated or Keyword Activated Skills. Here's a step-by-step guide:
+
+1. **Identify the Skill**: Determine what task or function you want the skill to perform.
+2. **Write the Function**: Code the Python function that performs the desired task.
+3. **Annotate the Skill**: Add the necessary comments to define the skill as either LM Activated or Keyword Activated.
+4. **Test the Skill**: Ensure the skill works as expected within the BUD-E framework.
+
+Example of a new skill:
+```python
+# LM ACTIVATED SKILL: Calculator; DESCRIPTION: Performs basic arithmetic operations.; USAGE INSTRUCTIONS: To use this skill, call it with the following tags: <calculate(operation, num1, num2)> Example: <calculate("add", 5, 3)>
+
+def calculate(operation, num1, num2):
+    if operation == "add":
+        return num1 + num2
+    elif operation == "subtract":
+        return num1 - num2
+    elif operation == "multiply":
+        return num1 * num2
+    elif operation == "divide":
+        return num1 / num2
+    else:
+        return "Invalid operation"
+```
 
 ## Call for Collaboration
 
