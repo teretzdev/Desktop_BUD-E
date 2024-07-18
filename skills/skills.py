@@ -17,6 +17,14 @@ import re
 import subprocess
 import time 
 
+import sys
+
+# Add the parent directory to the sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the parent directory to the sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../api_configs')))
+
+
 from florence2 import handle_captioning_florence2
 from florence2 import handle_ocr_florence2
 from florence2 import send_image_for_captioning_florence2
@@ -27,12 +35,47 @@ from hyprlab import send_image_for_captioning_and_ocr_hyprlab_gpt4o
 
 from dl_yt_subtitles import download_youtube_video_info, extract_and_concat_subtitle_text, find_first_youtube_url, extract_title, extract_description
 
+# Import configurations from a local module
+from api_configs.configs import get_llm_config, get_tts_config, get_asr_config
+
+
+# Import LangChain components for natural language processing tasks
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
+from langchain_together import Together
+
+
+# Import configurations from a local module
+from api_configs.configs import get_llm_config, get_tts_config, get_asr_config
+
+from llm_definition import get_llm, LanguageModelProcessor
+
+
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
+from langchain.chains import LLMChain
+
+# Get configuration for the language model
+llm_config = get_llm_config()
+
+llm = LanguageModelProcessor(llm_config)
+
+# YOU CAN CALL THE STANDARD LLM LIKE THIS WITHOUT MEMORY TO MAKE LLM CALLS WITHIN SKILLS
+# llm_response = llm.llm_call_without_memory("2+3=?")
+# print("llm_response", str(llm_response))
+
 
 
 
 # URL of the API
 url = 'https://api.hyprlab.io/v1/chat/completions'
-HYPRLAB_API_KEY = "hypr-lab-XXXXXXXXXXXXXXXX" # os.getenv("HYPRLAB_API_KEY")
+HYPRLAB_API_KEY = "hypr-lab-xxxxxxx" # os.getenv("HYPRLAB_API_KEY")
 
 florence2_server_url = "http://213.173.96.19:5002/" 
 
@@ -89,7 +132,7 @@ def send_image_for_captioning_and_ocr_hyprlab_gpt4o (img_byte_arr):
 
 
 
-# KEYWORD ACTIVATED SKILL:[ ["have a look"], [ "buddy look"], ["look buddy"], ["buddy, look" ], ["look, buddy" ]  ]
+# KEYWORD ####DEACTIVATED### ACTIVATED SKILL:[ ["have a look"], [ "buddy look"], ["look buddy"], ["buddy, look" ], ["look, buddy" ]  ]
 def get_caption_from_clipboard_gpt4o_hyprlab(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
     # Check clipboard content
 
@@ -151,7 +194,7 @@ def get_caption_from_clipboard_gpt4o_hyprlab(transcription_response, conversatio
         return skill_response, updated_conversation, updated_scratch_pad 
 
 
-# KEYWORD ACTIVATED SKILL:[ ["have a look", "screen"], [ "buddy look at the screen"], ["look buddy at the screen"], ["buddy, look at the screen" ], ["look, buddy" , "screenshot"]  ]
+# KEYWORD ####DEACTIVATED### ACTIVATED SKILL:[ ["have a look", "screen"], [ "buddy look at the screen"], ["look buddy at the screen"], ["buddy, look at the screen" ], ["look, buddy" , "screenshot"]  ]
 def get_caption_from_screenshot_gpt4o_hyprlab(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
 
     
@@ -188,7 +231,7 @@ def get_caption_from_screenshot_gpt4o_hyprlab(transcription_response, conversati
     return skill_response , updated_conversation, updated_scratch_pad 
 
 
-# K #####DEACTIVATED###### EYWORD ACTIVATED SKILL:[ ["have a look", "florence"], [ "buddy look", "florence"], ["look buddy at the screen", "florence"], ["buddy, look at the screen", "florence" ], ["look, buddy" , "screenshot", "florence"]  ]
+# KEYWORD ACTIVATED SKILL:[ ["have a look", "screen"], ["look buddy at the screen"], ["buddy, look at the screen" ], ["look, buddy" , "screenshot"]  ]
 def get_caption_from_screenshot_florence2(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
 
 
@@ -245,7 +288,7 @@ def get_caption_from_screenshot_florence2(transcription_response, conversation, 
 
 
 
-
+# KEYWORD ACTIVATED SKILL:[ ["have a look"], [ "buddy look"], ["look buddy"], ["buddy, look" ], ["look, buddy" ]  ]
 def get_caption_from_clipboard_florence2(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
 
     skill_response = "What BUD-E is seeing: "
@@ -322,6 +365,41 @@ def get_caption_from_clipboard_florence2(transcription_response, conversation, s
 
 
 
+# KEYWORD ACTIVATED SKILL: [["twinkle twinkle little star"], ["twinkle, twinkle, little, star"], ["twinkle twinkle, little star"], ["twinkle, twinkle little star"] , ["Twinkle, twinkle, little star"], ["twinkle, little star"], ["twinkle little star"]]
+def print_twinkling_star(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
+    # Simulated animation of a twinkling star using ASCII art
+
+    star_frames = [
+        """
+             ☆ 
+            ☆☆☆
+           ☆☆☆☆☆
+            ☆☆☆
+             ☆
+        """,
+        """
+             ✦
+            ✦✦✦
+           ✦✦✦✦✦
+            ✦✦✦
+             ✦
+        """
+    ]
+
+    skill_response = "Twinkle, twinkle, little star!\n"
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
+
+    for _ in range(3):  # Loop to display the animation multiple times
+        for frame in star_frames:
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the console window
+            print(skill_response + frame)
+            time.sleep(0.5)  # Wait for half a second before showing the next frame
+
+    return skill_response, updated_conversation, updated_scratch_pad
+
+
+
 
 def open_site(url):
     # Use subprocess.Popen to open the browser
@@ -359,31 +437,6 @@ def send_question_to_askorkg(transcription_response, conversation, scratch_pad, 
     print ("SUCCESS")
     return  skill_response, conversation, scratch_pad
     
-
-# LM ACTIVATED SKILL: bla
-def extract_questions_to_send_to_wikipedia(input_string):
-    # Define a regular expression pattern to find content within <open-askorkg>...</open-orkg> tags
-    pattern = r"<open-wikipedia>(.*?)</open-wikipedia>"
-    
-    # Use re.findall to extract all occurrences of the pattern
-    contents = re.findall(pattern, input_string)
-    
-    # Return the content of the first tag pair, or None if there are no matches
-    return  skill_response, conversation, scratch_pad
-    
-
-# LM ACTIVATED SKILL: SKILL TITLE: Search Google in Browser. DESCRIPTION: Uses a custom function to open a browser to Google's search page for any specified topic. USAGE INSTRUCTIONS: To activate this skill, use the command within the tags <open-google> ... </open-google>. For example, if the user asks 'Search Google for quantum mechanics', you should output: <open-google>quantum mechanics</open-google>.
-def search_google(transcription_response, conversation, scratch_pad, search_query):
-    # Using a simulated function to construct and open the Google search URL
-    open_site(f"https://www.google.com/search?q={search_query}")
-
-    skill_response = f"I'm searching Google for: {search_query}"
-    updated_conversation = conversation
-    updated_scratch_pad = scratch_pad
-
-    print("Google search initiated!")
-    return skill_response, updated_conversation, updated_scratch_pad
-
     
 # LM ACTIVATED SKILL: SKILL TITLE: Search English Wikipedia. DESCRIPTION: This skill enables the BUD-E voice assistant to search and retrieve content from English Wikipedia based on user-provided keywords. USAGE INSTRUCTIONS: To search for content on Wikipedia, use the command with the tags <open-wikipedia> ... </open-wikipedia>. For example, if the user wants to find information on 'Quantum Computing', you should respond with: <open-wikipedia>Quantum Computing</open-wikipedia>.
 def search_en_wikipedia(transcription_response, conversation, scratch_pad, wikipedia_search_keywords):
@@ -400,3 +453,62 @@ def search_en_wikipedia(transcription_response, conversation, scratch_pad, wikip
     return skill_response, conversation, scratch_pad
     
     
+    
+import wikipediaapi
+
+# Wikipedia API initialization
+wiki_wiki = wikipediaapi.Wikipedia(
+    language='en',
+    user_agent='en_wiki_api/1.0 (me@example.com)'  # Example User-Agent
+)
+
+def get_wikipedia_content(topic):
+    """
+    This function retrieves the content of a Wikipedia article on a given topic.
+    """
+    page = wiki_wiki.page(topic)
+    if page.exists():
+        return page.text, page.fullurl
+    else:
+        return "No article found.", None
+
+
+# LM ACTIVATED SKILL: SKILL TITLE: Search Google in Browser. DESCRIPTION: Uses a custom function to open a browser to Google's search page for any specified topic. USAGE INSTRUCTIONS: To activate this skill, use the command within the tags <open-google> ... </open-google>. For example, if the user asks 'Search Google for quantum mechanics', you should output: <open-google>quantum mechanics</open-google>.
+def search_google(transcription_response, conversation, scratch_pad, search_query):
+    # Using a simulated function to construct and open the Google search URL
+    open_site(f"https://www.google.com/search?q={search_query}")
+
+    skill_response = f"I'm searching Google for: {search_query}"
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
+
+    print("Google search initiated!")
+    return skill_response, updated_conversation, updated_scratch_pad
+
+
+# WORK IN PROGRESS
+# LM ####DEACTIVATED### ACTIVATED SKILL: SKILL TITLE: Deep Search and Summarize Wikipedia. DESCRIPTION: This skill performs a deep search in English Wikipedia on a specified topic and summarizes all the results found. USAGE INSTRUCTIONS: To perform a deep search and summarize, use the command with the tags <deep-wikipedia> ... </deep-wikipedia>. For example, if the user wants to find information on 'Quantum Computing', you should respond with: <deep-wikipedia>Quantum Computing</deep-wikipedia>.
+def deep_search_and_summarize_wikipedia(transcription_response, conversation, scratch_pad, topic):
+    """
+    This skill searches English Wikipedia for a given topic and summarizes the results.
+    """
+    print("START")
+    # Fetch the content from Wikipedia
+    raw_text, source_url = get_wikipedia_content(topic)
+    print("#############")
+    print(raw_text, source_url)
+    print(llm.llm_call_without_memory("3+6=?"))
+    
+    #if raw_text == "No article found.":
+    #    skill_response = f"No article found for the topic: {topic}"
+    #    return skill_response, conversation, scratch_pad
+    
+    # Instruction for the LLM to summarize the text
+    instruction = f"Summarize the following text to 500 words with respect to what is important and provide at the end source URLs with explanations : {raw_text[:5000]}"
+    summary = llm.llm_call_without_memory(instruction)
+    print("summary", summary)
+    # Form the final response
+    skill_response = f"Here is a summary of the Wikipedia article on '{topic}':\n\n{summary}\n\nSource: {source_url}"
+    print(skill_response)
+    return skill_response, conversation, scratch_pad
+
