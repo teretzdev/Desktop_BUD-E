@@ -1,6 +1,8 @@
 import clipboard
 import json
 import random
+from plan_manager import initialize_plan, update_plan, get_plan
+from plan_executor import execute_tasks
 from PIL import Image
 from PIL import ImageGrab
 
@@ -486,6 +488,25 @@ def search_google(transcription_response, conversation, scratch_pad, search_quer
     return skill_response, updated_conversation, updated_scratch_pad
 
 
+# LM ACTIVATED SKILL: SKILL TITLE: Plan Management. DESCRIPTION: This skill allows BUD-E to create, update, and execute plans based on user input. USAGE INSTRUCTIONS: Use commands like "create a plan", "update the plan", or "execute the plan" to interact with the plan management system.
+def manage_plan(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
+    skill_response = ""
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
+
+    if "create a plan" in transcription_response.lower():
+        initialize_plan()
+        skill_response = "A new plan has been created."
+    elif "update the plan" in transcription_response.lower():
+        # Example update, in practice, parse LMGeneratedParameters for task details
+        update_plan("task1", {"description": "Complete the project", "due_date": "2023-12-31"})
+        skill_response = "The plan has been updated."
+    elif "execute the plan" in transcription_response.lower():
+        execute_tasks()
+        skill_response = "The plan has been executed."
+
+    return skill_response, updated_conversation, updated_scratch_pad
+
 # WORK IN PROGRESS
 # LM ####DEACTIVATED### ACTIVATED SKILL: SKILL TITLE: Deep Search and Summarize Wikipedia. DESCRIPTION: This skill performs a deep search in English Wikipedia on a specified topic and summarizes all the results found. USAGE INSTRUCTIONS: To perform a deep search and summarize, use the command with the tags <deep-wikipedia> ... </deep-wikipedia>. For example, if the user wants to find information on 'Quantum Computing', you should respond with: <deep-wikipedia>Quantum Computing</deep-wikipedia>.
 def deep_search_and_summarize_wikipedia(transcription_response, conversation, scratch_pad, topic):
@@ -511,4 +532,3 @@ def deep_search_and_summarize_wikipedia(transcription_response, conversation, sc
     skill_response = f"Here is a summary of the Wikipedia article on '{topic}':\n\n{summary}\n\nSource: {source_url}"
     print(skill_response)
     return skill_response, conversation, scratch_pad
-
