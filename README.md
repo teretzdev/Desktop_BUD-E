@@ -44,6 +44,51 @@ pip install -U -r requirements.txt
 python3 buddy.py
 ```
 
+## Plan Management
+
+The BUD-E framework now includes a plan management feature that allows users to create, update, mark items as completed, and retrieve plans. This feature is useful for managing tasks and keeping track of progress.
+
+### Creating a New Plan
+
+To initialize a new plan, use the `initialize_plan` function. This will create a new plan with empty tasks and completed tasks lists.
+
+```python
+from plan_manager import initialize_plan
+
+initialize_plan()
+```
+
+### Updating a Plan
+
+To update a plan with new tasks or information, use the `update_plan` function. You need to provide a task ID and task information.
+
+```python
+from plan_manager import update_plan
+
+update_plan("task1", {"description": "Complete the project", "due_date": "2023-12-31"})
+```
+
+### Marking Items as Completed
+
+To mark a task as completed, use the `mark_item_completed` function with the task ID.
+
+```python
+from plan_manager import mark_item_completed
+
+mark_item_completed("task1")
+```
+
+### Retrieving the Plan
+
+To retrieve the current state of the plan, use the `get_plan` function.
+
+```python
+from plan_manager import get_plan
+
+current_plan = get_plan()
+print(current_plan)
+```
+
 ## Skills
 
 ### Types of Skills
