@@ -1,8 +1,9 @@
 import clipboard
 import json
 import random
-from plan_manager import initialize_plan, update_plan, get_plan
+from plan_manager import initialize_plan, update_plan, get_plan, export_plan_to_visualizer_format
 from plan_executor import execute_tasks
+from src.plan_visualizer import generate_gantt_chart
 from PIL import Image
 from PIL import ImageGrab
 
@@ -506,8 +507,20 @@ def manage_plan(transcription_response, conversation, scratch_pad, LMGeneratedPa
         skill_response = "The plan has been executed."
 
     return skill_response, updated_conversation, updated_scratch_pad
+# KEYWORD ACTIVATED SKILL: [["show the plan"], ["visualize the plan"], ["display the plan"]]
+def visualize_plan(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
+    """Visualize the current plan using a Gantt chart."""
+    skill_response = "Displaying the plan visualization."
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
 
-# WORK IN PROGRESS
+    # Export plan data to a format suitable for visualization
+    plan_data = export_plan_to_visualizer_format()
+
+    # Generate and display the Gantt chart
+    generate_gantt_chart(plan_data)
+
+    return skill_response, updated_conversation, updated_scratch_pad
 # LM ####DEACTIVATED### ACTIVATED SKILL: SKILL TITLE: Deep Search and Summarize Wikipedia. DESCRIPTION: This skill performs a deep search in English Wikipedia on a specified topic and summarizes all the results found. USAGE INSTRUCTIONS: To perform a deep search and summarize, use the command with the tags <deep-wikipedia> ... </deep-wikipedia>. For example, if the user wants to find information on 'Quantum Computing', you should respond with: <deep-wikipedia>Quantum Computing</deep-wikipedia>.
 def deep_search_and_summarize_wikipedia(transcription_response, conversation, scratch_pad, topic):
     """

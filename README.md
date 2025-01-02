@@ -45,8 +45,8 @@ python3 buddy.py
 ```
 
 ## Plan Management
-
-The BUD-E framework now includes a plan management feature that allows users to create, update, mark items as completed, and retrieve plans. This feature is useful for managing tasks and keeping track of progress.
+## Plan Management and Visualization
+The BUD-E framework now includes a plan management feature that allows users to create, update, mark items as completed, and retrieve plans. Additionally, users can visualize their plans using Gantt charts, which is useful for managing tasks and keeping track of progress.
 
 ### Creating a New Plan
 
@@ -79,7 +79,19 @@ mark_item_completed("task1")
 ```
 
 ### Retrieving the Plan
+### Visualizing the Plan
 
+To visualize the current plan, use the `visualize_plan` function. This will generate an interactive Gantt chart that displays the tasks, their start and end dates, and their completion status.
+
+```python
+from skills import visualize_plan
+
+visualize_plan()
+```
+
+This feature uses the `plotly` library to create the Gantt chart, which allows users to interact with the chart by zooming and panning.
+
+### Retrieving the Plan
 To retrieve the current state of the plan, use the `get_plan` function.
 
 ```python
@@ -88,6 +100,15 @@ from plan_manager import get_plan
 current_plan = get_plan()
 print(current_plan)
 ```
+
+## Dependencies
+
+To enable the plan visualization feature, ensure that the following dependencies are installed:
+
+- `plotly`: Used for generating interactive Gantt charts.
+- `pandas`: Required for data manipulation and preparation for visualization.
+
+These dependencies can be installed via the `requirements.txt` file.
 
 ## Skills
 

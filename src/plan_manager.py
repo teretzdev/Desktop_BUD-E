@@ -51,6 +51,16 @@ def get_plan():
     print(json.dumps(plan, indent=4))
     return plan
 
+def export_plan_to_visualizer_format():
+    """Convert the plan data into a format suitable for visualization."""
+    plan = load_plan()
+    tasks = []
+    for task_id, task_info in plan.items():
+        if task_id not in ['tasks', 'completed_tasks']:
+            task_info['task_id'] = task_id
+            tasks.append(task_info)
+    return tasks
+
 # Example usage
 if __name__ == "__main__":
     initialize_plan()
