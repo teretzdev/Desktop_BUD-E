@@ -4,6 +4,12 @@ import random
 from plan_manager import initialize_plan, update_plan, get_plan, export_plan_to_visualizer_format, export_plan_to_visualizer_format
 from plan_executor import execute_tasks
 from src.plan_visualizer import generate_gantt_chart
+import clipboard
+import json
+import random
+from src.integration_tools import JiraIntegration, TrelloIntegration
+from plan_manager import initialize_plan, update_plan, get_plan
+from plan_executor import execute_tasks
 from PIL import Image
 from PIL import ImageGrab
 
@@ -488,6 +494,33 @@ def search_google(transcription_response, conversation, scratch_pad, search_quer
     print("Google search initiated!")
     return skill_response, updated_conversation, updated_scratch_pad
 
+# LM ACTIVATED SKILL: SKILL TITLE: Integrate with Project Management Tools. DESCRIPTION: This skill allows BUD-E to interact with Jira and Trello, fetching and updating tasks based on user commands. USAGE INSTRUCTIONS: Use commands like "fetch tasks from Jira", "update Trello card", etc., to interact with these tools.
+def integrate_with_project_management_tools(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):
+    skill_response = ""
+    updated_conversation = conversation
+    updated_scratch_pad = scratch_pad
+
+    # Initialize Jira and Trello integrations
+    jira = JiraIntegration(
+        base_url="https://your-domain.atlassian.net",
+        username=os.getenv("JIRA_USERNAME"),
+        api_token=os.getenv("JIRA_API_TOKEN")
+    )
+    trello = TrelloIntegration(
+        api_key=os.getenv("TRELLO_API_KEY"),
+        api_token=os.getenv("TRELLO_API_TOKEN")
+    )
+
+    # Example command handling
+    if "fetch tasks from jira" in transcription_response.lower():
+        projects = jira.fetch_projects()
+        skill_response = f"Fetched projects from Jira: {projects}"
+    elif "update trello card" in transcription_response.lower():
+        # Example update, in practice, parse LMGeneratedParameters for card details
+        trello.update_card("card_id", {"name": "Updated Card Name"})
+        skill_response = "Trello card updated."
+
+    return skill_response, updated_conversation, updated_scratch_pad
 
 # LM ACTIVATED SKILL: SKILL TITLE: Plan Management. DESCRIPTION: This skill allows BUD-E to create, update, and execute plans based on user input. USAGE INSTRUCTIONS: Use commands like "create a plan", "update the plan", or "execute the plan" to interact with the plan management system.
 def manage_plan(transcription_response, conversation, scratch_pad, LMGeneratedParameters=""):

@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect, url_for
 from flask import send_from_directory
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import threading
 import time
 import json
@@ -45,20 +46,52 @@ print(parsed_answer)
 
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Needed for session management
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
-@app.route('/add', methods=['GET'])
-def add_item():
-    """Adds an item to the list received via a GET request."""
-    item = request.args.get('item')
-    if item:
-        items.append(item)
-        return jsonify(success=True, message="Item added successfully."), 200
-    else:
-        return jsonify(success=False, message="No item provided."), 400
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == 'admin' and password == 'password':  # Simple check
+            user = User(id=1)
+            login_user(user)
+            return redirect(url_for('protected'))
+        return 'Invalid credentials', 401
+    return '''
+        <form method="post">
+            <input type="text" name="username" placeholder="Username">
+            <input type="password" name="password" placeholder="Password">
+            <input type="submit" value="Login">
+        </form>
+    '''
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return 'Logged out'
+
+@app.route('/protected')
+@login_required
+def protected():
+    return f'Logged in as: {current_user.id}'
 
 
 @app.route('/synthesize', methods=['POST'])
+@login_required
 def synthesize_speech():
     text = request.json.get('text')
     print("received request:", text)
@@ -102,6 +135,3 @@ if __name__ == '__main__':
 
     # Starts the Flask web server
     app.run(host='0.0.0.0', port=5002)
-
-
-

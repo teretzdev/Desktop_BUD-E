@@ -14,6 +14,39 @@ BUD-E, short for "Buddy", is an innovative voice assistant framework designed to
 
 BUD-E integrates several core components including a speech-to-text model, a language model, and a text-to-speech model. These components are interchangeable and can be accessed either locally or through APIs. The framework supports integration with services from leading providers like OpenAI and Anthropic, or allows users to deploy their own models using open-source frameworks like Ollama or VLLM.
 
+### Integration with Jira and Trello
+
+BUD-E now supports integration with Jira and Trello, allowing users to fetch and update tasks directly from these platforms. This feature enhances project management capabilities within the BUD-E framework.
+
+#### Setup Instructions
+1. Ensure you have API access to Jira and Trello.
+2. Set your API keys in the environment:
+   ```sh
+   echo 'export JIRA_API_TOKEN="yourjiraapitoken"' >> ~/.bashrc
+   echo 'export TRELLO_API_KEY="yourtrelloapikey"' >> ~/.bashrc
+   echo 'export TRELLO_API_TOKEN="yourtrelloapitoken"' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+#### Usage Examples
+- **Fetch tasks from Jira**: Use the command "fetch tasks from Jira" to retrieve tasks.
+- **Update Trello card**: Use the command "update Trello card" to modify card details.
+
+### Voice Command Capabilities
+
+BUD-E includes voice command capabilities for hands-free operation. This feature allows users to interact with the assistant using voice commands.
+
+#### Setup Instructions
+1. Ensure your microphone is working and accessible.
+2. Install the necessary libraries for voice recognition:
+   ```sh
+   pip install sounddevice vosk
+   ```
+
+#### Usage
+- BUD-E listens for voice commands and triggers appropriate skills based on recognized commands.
+- Example commands include "fetch tasks from Jira" or "update Trello card".
+
 ### Skills Interface
 
 Any Python function can become a skill, allowing the voice assistant to handle tasks ranging from processing screenshots with captioning and OCR models to interacting with clipboard contents including text, images, and links. BUD-E supports dynamic skill activation, either by allowing the language model to choose a skill from a "menu" that gets dynamically added to the system prompt or through direct keywords said by the user. 
@@ -26,6 +59,10 @@ BUD-E is dedicated to fostering a community-centric development environment with
 ## Installation Instructions
 
 The current version of BUD-E currently uses Deepgram for the audio service and Groq the LLM. For the wake word detection it uses Porcupine from Pico Voice ( https://picovoice.ai/platform/porcupine/ ). We are working on a stack of open source models that can very soon run it completely local or on your own API server.
+
+### Additional Setup for New Features
+- **Jira and Trello Integration**: Ensure API keys are set as described in the Integration section.
+- **Voice Command Capabilities**: Install `sounddevice` and `vosk` for voice recognition.
 
 Recommendation: Make a venv and install everything in the venv. Make sure your microphone works.
 

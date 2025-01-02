@@ -1,6 +1,10 @@
 # Import necessary modules
-
 # subprocess: Allows running system commands from within Python
+import subprocess
+import sounddevice as sd
+import soundfile as sf
+import queue
+import vosk
 import subprocess
 
 # os: Provides functions for interacting with the operating system (e.g., environment variables, file operations)
@@ -207,6 +211,31 @@ print(keyword_activated_skills_dict)
 lm_activated_skills_dict = extract_activated_skills_from_directory(skills_directory, "LM ACTIVATED SKILL:")    
 print(lm_activated_skills_dict)
 
+
+# Define a function to listen for voice commands
+def listen_for_voice_commands():
+    model = vosk.Model("model")
+    q = queue.Queue()
+
+    def callback(indata, frames, time, status):
+        if status:
+            print(status)
+        q.put(bytes(indata))
+
+    with sd.RawInputStream(samplerate=16000, blocksize=8000, dtype='int16',
+                           channels=1, callback=callback):
+        rec = vosk.KaldiRecognizer(model, 16000)
+        while True:
+            data = q.get()
+            if rec.AcceptWaveform(data):
+                result = rec.Result()
+                command = json.loads(result).get('text', '')
+                if command:
+                    print(f"Recognized command: {command}")
+                    # Trigger skills based on recognized command
+                    # Example: conditional_execution("skill_name", command, conversation, scratch_pad)
+            else:
+                rec.PartialResult()
 
 # Define a function for conditional execution of skills
 def conditional_execution(function_name, transcription_response, conversation, scratch_pad, conditions_list=[], LMGeneratedParameters=""):
@@ -510,6 +539,9 @@ async def main():
     wake_word_engine.initialize()
     print("Listening for wake words...")
     await wake_word_engine.detect()
+
+    # Start listening for voice commands
+    listen_for_voice_commands()
 
 
 
