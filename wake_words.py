@@ -18,9 +18,9 @@ class WakeWordEngine:
         self.engine = None
 
     def initialize(self):
-        access_key = os.getenv("PORCUPINE_API_KEY")
-        keyword_paths = [f"{word}_en_linux_v3_0_0.ppn" for word in self.wake_words]
-        self.engine = pvporcupine.create(access_key=access_key, keyword_paths=keyword_paths)
+        access_key = "k7i1JbJo74k4031rIsdVy7RKf5iH60DlN9h1f97zr1Q6eiGV6hseaA=="  # Your actual key
+        keyword_paths = [f"{word}_en_windows_v3_0_11.ppn" for word in self.wake_words]
+        self.engine = pvporcupine.create(access_key=access_key, keyword_paths=['hey-buddy_en_windows_v3_0_11.ppn'])
         self.recorder = pvrecorder.PvRecorder(device_index=-1, frame_length=self.engine.frame_length)
         self.recorder.start()
 

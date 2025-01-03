@@ -1,8 +1,8 @@
 import clipboard
 import json
 import random
-from plan_manager import initialize_plan, update_plan, get_plan
-from plan_executor import execute_tasks
+# from plan_manager import initialize_plan, update_plan, get_plan
+# from plan_executor import execute_tasks
 from PIL import Image
 from PIL import ImageGrab
 
@@ -45,7 +45,7 @@ from api_configs.configs import get_llm_config, get_tts_config, get_asr_config
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
-from langchain_together import Together
+# from langchain_together import Together
 
 
 # Import configurations from a local module
@@ -84,52 +84,52 @@ florence2_server_url = "http://213.173.96.19:5002/"
 
 
 def send_image_for_captioning_and_ocr_hyprlab_gpt4o (img_byte_arr):
-	
-	#print(HYPRLAB_API_KEY)
-	# Headers for the request
-	headers = {
-	    'Content-Type': 'application/json',
-	    'Authorization': f'Bearer {HYPRLAB_API_KEY}'
-	}
+        
+        #print(HYPRLAB_API_KEY)
+        # Headers for the request
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {HYPRLAB_API_KEY}'
+        }
 
-	encoded_image = base64.b64encode(img_byte_arr).decode('utf-8')
+        encoded_image = base64.b64encode(img_byte_arr).decode('utf-8')
 
-	# Data to be sent
-	data = {
-	    "model": "gpt-4o",
-	    "messages": [
-		{
-		    "role": "system",
-		    "content": "You are ChatGPT, a large language model trained by OpenAI.\nCarefully heed the user's instructions.\nRespond using Markdown"
-		},
-		{
-		    "role": "user",
-		    "content": [
-		        {
-		            "type": "text",
-		            "text": "Describe this image with many details including texts, equations, diagrams & tables. Describe what can be seen with many details and explain what can be seen where. If there is any excercise or problem in it, provide a brief, correct solution."
-		        },
-		        {
-		            "type": "image_url",
-		            "image_url": {
-		                "url": f"data:image/jpeg;base64,{encoded_image}",
-		                "detail": "high"
-		            }
-		        }
-		    ]
-		}
-	    ]
-	}
+        # Data to be sent
+        data = {
+            "model": "gpt-4o",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are ChatGPT, a large language model trained by OpenAI.\nCarefully heed the user's instructions.\nRespond using Markdown"
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Describe this image with many details including texts, equations, diagrams & tables. Describe what can be seen with many details and explain what can be seen where. If there is any excercise or problem in it, provide a brief, correct solution."
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{encoded_image}",
+                                "detail": "high"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
 
-	# Send request and receive response
-	response = requests.post(url, headers=headers, json=data)
+        # Send request and receive response
+        response = requests.post(url, headers=headers, json=data)
        
-	# Output response
-	print(response.status_code)
-	print(response.text)
-	response_dict = json.loads(response.text)
-	
-	return response_dict["choices"][0]["message"]["content"]
+        # Output response
+        print(response.status_code)
+        print(response.text)
+        response_dict = json.loads(response.text)
+        
+        return response_dict["choices"][0]["message"]["content"]
 
 
 

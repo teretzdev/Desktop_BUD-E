@@ -82,7 +82,7 @@ from wake_words import get_wake_words, WakeWordEngine
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
-from langchain_together import Together
+# from langchain_together import Together
 from llm_definition import get_llm, LanguageModelProcessor
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import (
@@ -498,7 +498,7 @@ class ConversationManager:
                 await self.speak_response(skill_response)
             else:
                 print(f"AI: {llm_response}")
-                await self.speak_response(llm_response)           		             
+                await self.speak_response(llm_response)                                      
             self.transcription_response = ""
 
         print("Conversation ended. Listening for wake words again...")
